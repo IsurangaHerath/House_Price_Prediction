@@ -1,0 +1,11 @@
+# Pinned runtime dependencies for the House Price Prediction project.
+# These versions match what was pre-installed and verified to work together
+# against Python 3.12 on this host (see README -> Setup).
+scikit-learn==1.8.0
+pandas==2.2.2
+numpy==2.5.1
+matplotlib==3.8.4
+seaborn==0.13.2
+nbconvert==7.17.1
+pytest==9.1.1
+joblib==1.5.3
