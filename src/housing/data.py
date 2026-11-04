@@ -4,7 +4,7 @@ This module separates data acquisition (which may download from figshare)
 from validation (which must pass before any modeling begins).
 """
 import pandas as pd
-from sklearn.datasets import fetch_california_housing
+from pathlib import Path
 
 EXPECTED_FEATURES = [
     "MedInc",
@@ -19,8 +19,11 @@ EXPECTED_FEATURES = [
 EXPECTED_N_FEATURES = len(EXPECTED_FEATURES)
 EXPECTED_ROWS = 20640
 
+DATA_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "california_housing.csv"
 
 def load_dataset() -> pd.DataFrame:
+    return pd.read_csv(DATA_PATH)
+
     """Load the California Housing dataset as a pandas DataFrame.
 
     Returns
