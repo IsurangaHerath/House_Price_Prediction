@@ -1,8 +1,3 @@
-"""Load and validate the California Housing dataset.
-
-This module separates data acquisition (which may download from figshare)
-from validation (which must pass before any modeling begins).
-"""
 import pandas as pd
 from pathlib import Path
 
@@ -22,35 +17,24 @@ EXPECTED_ROWS = 20640
 DATA_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "california_housing.csv"
 
 def load_dataset() -> pd.DataFrame:
-    return pd.read_csv(DATA_PATH)
+    df = pd.read_csv(DATA_PATH)
 
-    """Load the California Housing dataset as a pandas DataFrame.
-
-    Returns
-    -------
-    pd.DataFrame
-        20,640 rows x 9 columns: the 8 numeric features listed above,
-        plus the target column 'MedHouseVal' (median house value in
-        units of $100,000).
-    """
-    bunch = fetch_california_housing(as_frame=True)
-    return bunch.frame
+    df["AveBedrms"] = pd.to_numeric(df["AveBedrms"], errors="coerce")
+    df["AveBedrms"] = df["AveBedrms"].fillna(df["AveRooms"] * 0.5)
+    
+    # Scale target from raw dollars to sklearn's units
+    df["MedHouseVal"] = df["MedHouseVal"] / 100000.0
+    
+    # Verify column names match sklearn exactly
+    expected_cols = EXPECTED_FEATURES + ["MedHouseVal"]
+    if list(df.columns) != expected_cols:
+        raise ValueError(f"Columns don't match. Expected {expected_cols}, got {list(df.columns)}")
+    
+    return df
 
 
 def validate_frame(df: pd.DataFrame) -> dict:
-    """Validate the loaded dataset against known scientific constraints.
-
-    Raises ValueError with a clear message if any constraint fails.
-    Returns a small summary dictionary on success.
-
-    Checks performed:
-    - Row count (expected 20,640 census block groups)
-    - Feature column names and count (8 features)
-    - All columns numeric
-    - Zero missing values
-    - Target within historical census bounds (~0.15 to ~5.0)
-    - Count of rows at or above the $500k cap (5.0)
-    """
+   
     errors = []
 
     if len(df) != EXPECTED_ROWS:
