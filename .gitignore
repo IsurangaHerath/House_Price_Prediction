@@ -43,6 +43,10 @@ models/*.joblib
 reports/figures/*.png
 reports/figures/*.pdf
 
+# Exception: the project's dataset is committed on purpose (about 1.2 MB) so
+# that a fresh clone can run the tests without any download step.
+!data/california_housing.csv
+
 # ---------------------------------------------------------------------------
 # Environment & credential files
 # ---------------------------------------------------------------------------
