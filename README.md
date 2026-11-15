@@ -16,12 +16,13 @@ applications.
 |---|---|
 | Dataset loading and validation | Complete, tested |
 | Exploratory data analysis notebook | Not started |
-| Baseline and regression models | Not started |
-| Model comparison and residual analysis | Not started |
+| Baseline and regression models | Complete, tested |
+| Model comparison and residual analysis | Comparison done; residual analysis pending |
 | Streamlit dashboard | Not started |
 
-No model results are reported yet. This README will be updated with measured
-metrics only after the experiments have actually been run.
+The baseline workflow is reproducible with `python -m src.housing.train`.
+Measured results are stored in
+[`reports/baseline_results.md`](./reports/baseline_results.md).
 
 ## Repository layout
 
@@ -33,15 +34,26 @@ house-price-prediction-ml/
 ├── data/
 │   ├── README.md              # dataset provenance, units, and caveats
 │   └── california_housing.csv # committed dataset (20,640 rows, 9 columns)
+├── reports/
+│   └── baseline_results.md    # measured baseline metrics
 ├── src/
 │   └── housing/
-│       └── data.py            # dataset loader and validator
+│       ├── __init__.py
+│       ├── data.py            # dataset loader and validator
+│       ├── features.py        # feature/target split
+│       ├── models.py          # model definitions and cross-validation
+│       ├── evaluate.py        # regression metrics
+│       └── train.py           # baseline training workflow
 └── tests/
-    └── test_data.py           # pytest suite for loading and validation
+    ├── test_data.py
+    ├── test_features.py
+    ├── test_evaluate.py
+    ├── test_models.py
+    └── test_train.py
 ```
 
-Planned additions: `notebooks/` (exploration), `src/housing/models.py`
-(training and evaluation), and `app.py` (dashboard).
+Planned additions: a notebook for exploration and residual analysis, and
+`app.py` for the dashboard.
 
 ## Dataset
 
@@ -93,20 +105,45 @@ print(summary)
 values, and the historical target range. It returns a small summary dictionary
 instead of silently accepting a corrupted dataset.
 
+Run the baseline workflow:
+
+```powershell
+.venv\Scripts\python.exe -m src.housing.train
+```
+
+This loads and validates the data, splits it 80/20, runs 5-fold
+cross-validation on the training set, then reports holdout metrics for the
+dummy baseline and linear regression models.
+
+## Baseline results
+
+| Stage | Model | MAE | RMSE | R² |
+|---|---|---:|---:|---:|
+| 5-fold CV | Linear regression | 0.529 | 0.721 | 0.611 |
+| 5-fold CV | Dummy mean | 0.914 | 1.156 | 0.000 |
+| Holdout | Linear regression | 0.573 | 0.803 | 0.508 |
+| Holdout | Dummy mean | 0.906 | 1.145 | 0.000 |
+
+Errors are in units of `$100,000`, so the linear model's holdout MAE is about
+**$57,300**. Linear regression clearly beats the mean baseline. Full details
+and caveats are in [`reports/baseline_results.md`](./reports/baseline_results.md).
+
 ## Tests
 
 ```powershell
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All four data tests currently pass.
+All 21 tests currently pass.
 
 ## Reproducibility
 
 - Dataset: committed CSV, so results do not depend on a network download.
 - Environment: pinned versions in `requirements.txt` (Python 3.12).
-- Random seeds, train/test split configuration, cross-validation settings, and
-  model parameters will be documented once the modeling code exists.
+- Split: 80/20 train/test, `random_state=42`.
+- Cross-validation: 5 shuffled folds, `random_state=42`.
+- Models: dummy mean baseline and `StandardScaler` + linear regression.
+- Metrics: MAE, RMSE, and R² in target units, plus MAE/RMSE in dollars.
 
 ## Known limitations
 
@@ -117,6 +154,9 @@ All four data tests currently pass.
    train/test split places neighbouring blocks in both folds. Reported scores
    describe prediction *within* California, not in an unseen region.
 3. **Historical data.** The values describe 1990, not the current housing market.
+4. **Imputed bedrooms.** The 207 missing `AveBedrms` values are filled with
+   `AveRooms * 0.5`, so those rows are approximate. With the current seed, all
+   207 rows fall in the holdout set.
 
 ## License
 

@@ -6,4 +6,4 @@ Import order inside notebooks should be:
     from src.housing import evaluate as housing_evaluate
 """
 
-__all__ = ["data", "features", "models", "evaluate"]
+__all__ = ["data", "features", "models", "evaluate", "train"]
