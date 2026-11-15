@@ -22,7 +22,12 @@ def small_split():
 
 def test_build_models_contains_expected_candidates():
     models = hm.build_models()
-    assert set(models) == {"dummy_mean", "linear_regression"}
+    assert set(models) == {
+        "dummy_mean",
+        "linear_regression",
+        "ridge",
+        "random_forest",
+    }
 
 
 def test_each_model_fits_and_predicts(small_split):
@@ -50,7 +55,7 @@ def test_cross_validation_returns_all_models(small_split):
     X_train, _, y_train, _ = small_split
     results = hm.cross_validate_models(hm.build_models(), X_train, y_train)
 
-    assert len(results) == 2
+    assert len(results) == len(hm.build_models())
     assert {"model", "cv_mae_mean", "cv_rmse_mean", "cv_r2_mean"} <= set(results.columns)
     # Lower MAE must be the first row (sorted ascending).
     assert results["cv_mae_mean"].is_monotonic_increasing

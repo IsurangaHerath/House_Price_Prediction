@@ -43,10 +43,14 @@ def train_and_evaluate(df=None, validate=True):
 
     # Fit every model on the training set and score it on the test set.
     test_rows = []
+    test_predictions = {}
 
     for name, model in models.items():
         fitted = fit_model(model, X_train, y_train)
-        metrics = regression_metrics(y_test, fitted.predict(X_test))
+        predictions = fitted.predict(X_test)
+        test_predictions[name] = predictions
+
+        metrics = regression_metrics(y_test, predictions)
         test_rows.append({"model": name, **metrics})
 
     test_results = pd.DataFrame(test_rows)
@@ -58,6 +62,8 @@ def train_and_evaluate(df=None, validate=True):
     return {
         "cv_results": cv_results,
         "test_results": test_results,
+        "test_predictions": test_predictions,
+        "y_test": y_test,
         "best_model": best_model,
         "n_train": len(X_train),
         "n_test": len(X_test),

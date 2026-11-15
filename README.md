@@ -17,11 +17,12 @@ applications.
 | Dataset loading and validation | Complete, tested |
 | Exploratory data analysis notebook | Not started |
 | Baseline and regression models | Complete, tested |
-| Model comparison and residual analysis | Comparison done; residual analysis pending |
+| Model comparison and residual analysis | Complete, tested |
 | Streamlit dashboard | Not started |
 
-The baseline workflow is reproducible with `python -m src.housing.train`.
-Measured results are stored in
+The training and analysis workflows are reproducible with
+`python -m src.housing.train` and `python -m src.housing.analyze`. Measured
+results are stored in
 [`reports/baseline_results.md`](./reports/baseline_results.md).
 
 ## Repository layout
@@ -42,18 +43,19 @@ house-price-prediction-ml/
 │       ├── data.py            # dataset loader and validator
 │       ├── features.py        # feature/target split
 │       ├── models.py          # model definitions and cross-validation
-│       ├── evaluate.py        # regression metrics
-│       └── train.py           # baseline training workflow
+│       ├── evaluate.py        # regression metrics and residual summaries
+│       ├── train.py           # training and evaluation workflow
+│       └── analyze.py         # residual analysis and plots
 └── tests/
     ├── test_data.py
     ├── test_features.py
     ├── test_evaluate.py
     ├── test_models.py
-    └── test_train.py
+    ├── test_train.py
+    └── test_analyze.py
 ```
 
-Planned additions: a notebook for exploration and residual analysis, and
-`app.py` for the dashboard.
+Planned additions: a notebook for exploration and `app.py` for the dashboard.
 
 ## Dataset
 
@@ -105,7 +107,7 @@ print(summary)
 values, and the historical target range. It returns a small summary dictionary
 instead of silently accepting a corrupted dataset.
 
-Run the baseline workflow:
+Run the model comparison workflow:
 
 ```powershell
 .venv\Scripts\python.exe -m src.housing.train
@@ -113,20 +115,49 @@ Run the baseline workflow:
 
 This loads and validates the data, splits it 80/20, runs 5-fold
 cross-validation on the training set, then reports holdout metrics for the
-dummy baseline and linear regression models.
+dummy, linear regression, ridge, and random forest models.
 
-## Baseline results
+Run the residual analysis:
 
-| Stage | Model | MAE | RMSE | R² |
-|---|---|---:|---:|---:|
-| 5-fold CV | Linear regression | 0.529 | 0.721 | 0.611 |
-| 5-fold CV | Dummy mean | 0.914 | 1.156 | 0.000 |
-| Holdout | Linear regression | 0.573 | 0.803 | 0.508 |
-| Holdout | Dummy mean | 0.906 | 1.145 | 0.000 |
+```powershell
+.venv\Scripts\python.exe -m src.housing.analyze
+```
 
-Errors are in units of `$100,000`, so the linear model's holdout MAE is about
-**$57,300**. Linear regression clearly beats the mean baseline. Full details
-and caveats are in [`reports/baseline_results.md`](./reports/baseline_results.md).
+This trains the same models, summarizes the best model's residuals, and saves
+residual plots to `reports/figures/`.
+
+## Model comparison and residual analysis
+
+### Cross-validation on the training set
+
+| Model | MAE | RMSE | R² |
+|---|---:|---:|---:|
+| Random forest | 0.335 | 0.511 | 0.805 |
+| Ridge | 0.529 | 0.721 | 0.611 |
+| Linear regression | 0.529 | 0.721 | 0.611 |
+| Dummy mean | 0.914 | 1.156 | 0.000 |
+
+### Holdout test set
+
+| Model | MAE | RMSE | R² | MAE ($) |
+|---|---:|---:|---:|---:|
+| Random forest | 0.331 | 0.508 | 0.803 | 33,057 |
+| Ridge | 0.573 | 0.803 | 0.508 | 57,325 |
+| Linear regression | 0.573 | 0.803 | 0.508 | 57,329 |
+| Dummy mean | 0.906 | 1.145 | 0.000 | 90,607 |
+
+The random forest is clearly the best model. Its holdout MAE is about
+**$33,000**, and it explains about **80%** of the variance.
+
+Residual checks for the random forest:
+
+- mean residual: **-0.019** (slightly over-predicting on average)
+- underprediction rate: **41.7%**
+- MAE at the target cap: **0.731** vs **0.312** below the cap
+
+The much larger error at the cap is expected: many different high values all
+appear as `5.0`, so the model cannot separate them. Full details and caveats
+are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 
 ## Tests
 
@@ -134,7 +165,7 @@ and caveats are in [`reports/baseline_results.md`](./reports/baseline_results.md
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 21 tests currently pass.
+All 24 tests currently pass.
 
 ## Reproducibility
 
@@ -142,14 +173,16 @@ All 21 tests currently pass.
 - Environment: pinned versions in `requirements.txt` (Python 3.12).
 - Split: 80/20 train/test, `random_state=42`.
 - Cross-validation: 5 shuffled folds, `random_state=42`.
-- Models: dummy mean baseline and `StandardScaler` + linear regression.
+- Models: dummy mean baseline, linear regression, ridge, and random forest
+  (100 trees).
 - Metrics: MAE, RMSE, and R² in target units, plus MAE/RMSE in dollars.
+- Residuals: mean/median error, underprediction rate, and cap-vs-uncapped MAE.
 
 ## Known limitations
 
 1. **Target ceiling.** Values at 5.0 are censored at the $500k census cap, so
-   high-value districts are harder to predict and metrics computed without
-   noting the cap count understate that difficulty.
+   high-value districts are harder to predict. The random forest's MAE is
+   about 0.731 on capped rows versus 0.312 on the rest.
 2. **Geographic leakage.** Rows are geographically clustered, so a random
    train/test split places neighbouring blocks in both folds. Reported scores
    describe prediction *within* California, not in an unseen region.

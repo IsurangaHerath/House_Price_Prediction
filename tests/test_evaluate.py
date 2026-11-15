@@ -42,3 +42,24 @@ def test_perfect_prediction_scores():
     assert metrics["mae"] == pytest.approx(0.0)
     assert metrics["rmse"] == pytest.approx(0.0)
     assert metrics["r2"] == pytest.approx(1.0)
+
+
+def test_residual_summary():
+    # residuals: 0.5, -0.5, 0.0, -1.0
+    summary = ev.residual_summary(Y_TRUE, Y_PRED)
+
+    assert summary["mean_residual"] == pytest.approx(-0.25)
+    assert summary["median_residual"] == pytest.approx(-0.25)
+    assert summary["mae"] == pytest.approx(0.5)
+    assert summary["rmse"] == pytest.approx(math.sqrt(0.375))
+    assert summary["underprediction_rate"] == pytest.approx(0.25)
+    assert summary["worst_overprediction"] == pytest.approx(-1.0)
+    assert summary["worst_underprediction"] == pytest.approx(0.5)
+
+
+def test_residual_summary_by_cap():
+    summary = ev.residual_summary_by_cap(Y_TRUE, Y_PRED, cap=3.0)
+
+    assert summary["capped_rows"] == 2
+    assert summary["capped_mae"] == pytest.approx(0.75)
+    assert summary["uncapped_mae"] == pytest.approx(0.25)

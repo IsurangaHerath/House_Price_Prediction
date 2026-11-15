@@ -2,7 +2,8 @@
 
 import pandas as pd
 from sklearn.dummy import DummyRegressor
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.model_selection import KFold, cross_validate
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -29,6 +30,18 @@ def build_models():
                 ("scaler", StandardScaler()),
                 ("regressor", LinearRegression()),
             ]
+        ),
+        # Ridge adds a small penalty to keep coefficients stable.
+        "ridge": Pipeline(
+            [
+                ("scaler", StandardScaler()),
+                ("regressor", Ridge(alpha=1.0)),
+            ]
+        ),
+        # Random forest can learn non-linear relationships.
+        "random_forest": RandomForestRegressor(
+            n_estimators=100,
+            random_state=RANDOM_STATE,
         ),
     }
 

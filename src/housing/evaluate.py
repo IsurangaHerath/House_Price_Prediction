@@ -26,3 +26,44 @@ def regression_metrics(y_true, y_pred):
         "rmse_usd": float(rmse) * TARGET_UNIT_USD,
         "n_samples": int(len(y_true)),
     }
+
+
+def residual_summary(y_true, y_pred):
+    """Describe the size and direction of prediction errors."""
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+
+    # Positive means the true value is higher than the prediction.
+    residuals = y_true - y_pred
+
+    return {
+        "mean_residual": float(residuals.mean()),
+        "median_residual": float(np.median(residuals)),
+        "mae": float(np.mean(np.abs(residuals))),
+        "rmse": float(np.sqrt(np.mean(residuals**2))),
+        "underprediction_rate": float((residuals > 0).mean()),
+        "worst_overprediction": float(residuals.min()),
+        "worst_underprediction": float(residuals.max()),
+    }
+
+
+def residual_summary_by_cap(y_true, y_pred, cap=5.0):
+    """Compare errors for rows at the target cap and below it."""
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+    residuals = y_true - y_pred
+    capped = y_true >= cap
+
+    return {
+        "capped_rows": int(capped.sum()),
+        "capped_mae": (
+            float(np.mean(np.abs(residuals[capped])))
+            if capped.any()
+            else None
+        ),
+        "uncapped_mae": (
+            float(np.mean(np.abs(residuals[~capped])))
+            if (~capped).any()
+            else None
+        ),
+    }
