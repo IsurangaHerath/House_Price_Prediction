@@ -1,5 +1,8 @@
-import pandas as pd
+"""Load and validate the California Housing dataset."""
+
 from pathlib import Path
+
+import pandas as pd
 
 EXPECTED_FEATURES = [
     "MedInc",
@@ -14,27 +17,43 @@ EXPECTED_FEATURES = [
 EXPECTED_N_FEATURES = len(EXPECTED_FEATURES)
 EXPECTED_ROWS = 20640
 
-DATA_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "california_housing.csv"
+TARGET_COLUMN = "MedHouseVal"
+TARGET_UNIT_USD = 100_000
 
-def load_dataset() -> pd.DataFrame:
+DATA_PATH = (
+    Path(__file__).resolve().parent.parent.parent
+    / "data"
+    / "california_housing.csv"
+)
+
+
+def load_dataset():
+    """Load the CSV and convert it to scikit-learn's units."""
     df = pd.read_csv(DATA_PATH)
 
-    df["AveBedrms"] = pd.to_numeric(df["AveBedrms"], errors="coerce")
+    # The raw file stores total rooms, total bedrooms, and households.
+    # Convert them to scikit-learn's per-household averages.
+    households = df["AveOccup"]
     df["AveBedrms"] = df["AveBedrms"].fillna(df["AveRooms"] * 0.5)
-    
-    # Scale target from raw dollars to sklearn's units
-    df["MedHouseVal"] = df["MedHouseVal"] / 100000.0
-    
-    # Verify column names match sklearn exactly
-    expected_cols = EXPECTED_FEATURES + ["MedHouseVal"]
+    df["AveRooms"] = df["AveRooms"] / households
+    df["AveBedrms"] = df["AveBedrms"] / households
+    df["AveOccup"] = df["Population"] / households
+
+    # The raw target is in dollars. Store it in $100,000 units.
+    df[TARGET_COLUMN] = df[TARGET_COLUMN] / TARGET_UNIT_USD
+
+    # Keep the same column order as scikit-learn.
+    expected_cols = EXPECTED_FEATURES + [TARGET_COLUMN]
     if list(df.columns) != expected_cols:
-        raise ValueError(f"Columns don't match. Expected {expected_cols}, got {list(df.columns)}")
-    
+        raise ValueError(
+            f"Columns don't match. Expected {expected_cols}, got {list(df.columns)}"
+        )
+
     return df
 
 
-def validate_frame(df: pd.DataFrame) -> dict:
-   
+def validate_frame(df):
+    """Check the dataset and return a short summary."""
     errors = []
 
     if len(df) != EXPECTED_ROWS:
@@ -42,52 +61,59 @@ def validate_frame(df: pd.DataFrame) -> dict:
             f"Row count mismatch: expected {EXPECTED_ROWS}, got {len(df)}"
         )
 
-    feature_cols = [c for c in EXPECTED_FEATURES if c in df.columns]
+    # Every feature and the target must be present.
+    feature_cols = [col for col in EXPECTED_FEATURES if col in df.columns]
     if len(feature_cols) != EXPECTED_N_FEATURES:
         errors.append(
             f"Feature count mismatch: expected {EXPECTED_N_FEATURES}, "
             f"found {len(feature_cols)} ({feature_cols})"
         )
 
-    # Ensure feature order matches the dataset definition
-    missing = [f for f in EXPECTED_FEATURES if f not in df.columns]
-    if missing:
-        errors.append(f"Missing feature columns: {missing}")
+    missing_features = [
+        col for col in EXPECTED_FEATURES if col not in df.columns
+    ]
+    if missing_features:
+        errors.append(f"Missing feature columns: {missing_features}")
 
-    if "MedHouseVal" not in df.columns:
-        errors.append("Target column 'MedHouseVal' missing.")
+    if TARGET_COLUMN not in df.columns:
+        errors.append(f"Target column '{TARGET_COLUMN}' missing.")
 
-    # Numeric check (defensive: dataset guarantees this, but the
-    # pipeline must verify, not assume)
-    for col in list(EXPECTED_FEATURES) + ["MedHouseVal"]:
+    # Every required column must be numeric.
+    for col in EXPECTED_FEATURES + [TARGET_COLUMN]:
         if col in df.columns and not pd.api.types.is_numeric_dtype(df[col]):
-            errors.append(f"Column '{col}' is non-numeric (dtype={df[col].dtype})")
+            errors.append(
+                f"Column '{col}' is non-numeric (dtype={df[col].dtype})"
+            )
 
-    # Missing-value check (dataset guarantees zero nulls, but check anyway)
-    null_counts = df.isnull().sum()
-    null_total = int(null_counts.sum())
+    # No missing values are allowed.
+    null_total = int(df.isnull().sum().sum())
     if null_total > 0:
         errors.append(f"Found {null_total} missing values across all columns.")
 
-    # Target-range check (historical census bounds; small float tolerance
-    # because of binary storage rounding, e.g. 5.00001)
-    if "MedHouseVal" in df.columns:
-        min_target = float(df["MedHouseVal"].min())
-        max_target = float(df["MedHouseVal"].max())
+    # Check the target range.
+    min_target = None
+    max_target = None
+    cap_count = None
+
+    if TARGET_COLUMN in df.columns:
+        min_target = float(df[TARGET_COLUMN].min())
+        max_target = float(df[TARGET_COLUMN].max())
+
         if min_target < 0.10:
             errors.append(f"Target minimum too low: {min_target}")
-        # Note: the dataset docs say cap at 5.0; floating-point storage
-        # can show 5.00001. We allow a small epsilon so the cap check does
-        # not fail on binary representation artifacts.
-        if max_target > 5.05:
-            errors.append(f"Target maximum exceeds expected cap: {max_target}")
 
-        cap_count = int((df["MedHouseVal"] >= 5.0).sum())
-    else:
-        cap_count = None
+        # The cap is 5.0, but float storage can show a tiny amount above it.
+        if max_target > 5.05:
+            errors.append(
+                f"Target maximum exceeds expected cap: {max_target}"
+            )
+
+        cap_count = int((df[TARGET_COLUMN] >= 5.0).sum())
 
     if errors:
-        raise ValueError("Dataset validation failed:\n" + "\n".join(errors))
+        raise ValueError(
+            "Dataset validation failed:\n" + "\n".join(errors)
+        )
 
     return {
         "rows": int(len(df)),
@@ -95,6 +121,6 @@ def validate_frame(df: pd.DataFrame) -> dict:
         "columns": list(df.columns),
         "null_total": null_total,
         "cap_count_at_5_0": cap_count,
-        "target_min": round(min_target, 4) if "MedHouseVal" in df.columns else None,
-        "target_max": round(max_target, 4) if "MedHouseVal" in df.columns else None,
+        "target_min": round(min_target, 4) if min_target is not None else None,
+        "target_max": round(max_target, 4) if max_target is not None else None,
     }

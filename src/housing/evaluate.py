@@ -3,8 +3,7 @@
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-# The target is stored in units of $100,000.
-TARGET_UNIT_USD = 100_000
+from .data import TARGET_UNIT_USD
 
 
 def regression_metrics(y_true, y_pred):

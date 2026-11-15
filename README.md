@@ -53,12 +53,14 @@ step is required.
 | Rows | 20,640 census block groups |
 | Features | MedInc, HouseAge, AveRooms, AveBedrms, Population, AveOccup, Latitude, Longitude |
 | Target | `MedHouseVal`, median house value in units of **$100,000** (the CSV stores dollars; the loader divides by 100,000) |
+| Feature units | `AveRooms`, `AveBedrms`, and `AveOccup` are converted from raw totals/households to per-household averages |
 | Target range | approximately 0.15 to 5.0 (about $15k to $500k) |
 
 The file is derived from the California Housing data distributed by the UCI
 Machine Learning Repository and prepared by the Scikit-learn project. The
-original 1990 figures are preserved; column names follow Scikit-learn's schema
-and the loader converts the target from dollars to $100,000 units. Provenance,
+original 1990 figures are preserved; column names follow Scikit-learn's schema,
+the loader converts the raw room/occupancy totals to per-household averages,
+and the target is converted from dollars to $100,000 units. Provenance,
 units, and scientific caveats are documented in [`data/README.md`](./data/README.md).
 
 ## Setup

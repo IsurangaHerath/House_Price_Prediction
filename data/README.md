@@ -27,16 +27,22 @@ were made so it matches Scikit-learn's schema:
 
 1. Column names were mapped to Scikit-learn's names (`median_income` →
    `MedInc`, `median_house_value` → `MedHouseVal`, and so on).
-2. The CSV stores the target in **dollars**; `load_dataset()` divides it by
+2. The raw file stores total rooms, total bedrooms, and households. The loader
+   converts them to Scikit-learn's per-household averages:
+   - `AveRooms` = total rooms / households
+   - `AveBedrms` = total bedrooms / households
+   - `AveOccup` = population / households
+3. The CSV stores the target in **dollars**; `load_dataset()` divides it by
    100,000 so the in-memory target uses Scikit-learn's units. The file itself is
    left unchanged so the raw values stay auditable.
-3. `ocean_proximity` was dropped because Scikit-learn's dataset does not include
+4. `ocean_proximity` was dropped because Scikit-learn's dataset does not include
    it and it is not used by this project.
-4. Missing `AveBedrms` values (207 rows) are imputed at load time in
+5. Missing `AveBedrms` values (207 rows) are imputed at load time in
    `src/housing/data.py` as `AveRooms * 0.5`, an explicit approximation rather
    than a silent default.
 
-All other values are unchanged from the 1990 census source.
+After these transformations, the in-memory frame matches Scikit-learn's schema
+and units. All other values are unchanged from the 1990 census source.
 
 ## What this dataset is **not**
 

@@ -2,9 +2,7 @@
 
 import pandas as pd
 
-from .data import EXPECTED_FEATURES
-
-TARGET_COLUMN = "MedHouseVal"
+from .data import EXPECTED_FEATURES, TARGET_COLUMN
 
 
 def split_features_target(df: pd.DataFrame):

@@ -29,6 +29,22 @@ def test_feature_target_separation():
     assert df["MedHouseVal"].name == "MedHouseVal"
 
 
+def test_features_use_sklearn_units():
+    """Rooms and occupancy must be per-household averages."""
+    df = hd.load_dataset()
+    row = df.iloc[0]
+
+    assert row["AveRooms"] == pytest.approx(6.984127, rel=1e-5)
+    assert row["AveBedrms"] == pytest.approx(1.023810, rel=1e-5)
+    assert row["AveOccup"] == pytest.approx(2.555556, rel=1e-5)
+
+
+def test_target_is_in_100k_units():
+    """The target must be scaled from dollars to $100,000 units."""
+    df = hd.load_dataset()
+    assert df[hd.TARGET_COLUMN].max() == pytest.approx(5.0, abs=0.01)
+
+
 def test_no_missing_values():
     """The dataset is complete by construction; validation must confirm."""
     df = hd.load_dataset()
