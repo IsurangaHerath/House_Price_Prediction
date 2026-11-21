@@ -1,5 +1,7 @@
 # House Price Prediction Using Machine Learning
 
+[![CI](https://github.com/IsurangaHerath/House_Price_Prediction/actions/workflows/ci.yml/badge.svg)](https://github.com/IsurangaHerath/House_Price_Prediction/actions/workflows/ci.yml)
+
 A small, reproducible regression project that predicts **historical California
 census block-group median house values** from the California Housing dataset.
 Built as a learning project and portfolio entry for Data Science internship
@@ -19,6 +21,7 @@ applications.
 | Baseline and regression models | Complete, tested |
 | Model comparison and residual analysis | Complete, tested |
 | Streamlit dashboard | Complete |
+| Continuous integration | Configured |
 
 The training and analysis workflows are reproducible with
 `python -m src.housing.train` and `python -m src.housing.analyze`. The
@@ -29,6 +32,9 @@ dashboard runs with `streamlit run app.py`. Measured results are stored in
 
 ```text
 house-price-prediction-ml/
+├── .github/
+│   └── workflows/
+│       └── ci.yml             # tests and compile checks on push and PR
 ├── .gitignore                 # excludes venvs, caches, and generated artifacts
 ├── README.md                  # this file
 ├── requirements.txt           # pinned dependencies
@@ -213,7 +219,19 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 28 tests currently pass.
+All 28 tests currently pass locally, and the same suite runs on every push and
+pull request through GitHub Actions.
+
+## Continuous integration
+
+The workflow in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) runs on
+Ubuntu with Python 3.12. It:
+
+1. installs the pinned dependencies from `requirements.txt`;
+2. checks that `app.py` and the `src` package compile;
+3. runs the full pytest suite.
+
+The badge at the top of this README shows the latest result.
 
 ## Reproducibility
 
