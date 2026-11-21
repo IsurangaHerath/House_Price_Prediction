@@ -15,7 +15,7 @@ applications.
 | Capability | Status |
 |---|---|
 | Dataset loading and validation | Complete, tested |
-| Exploratory data analysis notebook | Not started |
+| Exploratory data analysis notebook | Complete |
 | Baseline and regression models | Complete, tested |
 | Model comparison and residual analysis | Complete, tested |
 | Streamlit dashboard | Not started |
@@ -37,6 +37,8 @@ house-price-prediction-ml/
 │   └── california_housing.csv # committed dataset (20,640 rows, 9 columns)
 ├── reports/
 │   └── baseline_results.md    # measured baseline metrics
+├── notebooks/
+│   └── 01_eda.ipynb           # exploratory data analysis
 ├── src/
 │   └── housing/
 │       ├── __init__.py
@@ -55,7 +57,7 @@ house-price-prediction-ml/
     └── test_analyze.py
 ```
 
-Planned additions: a notebook for exploration and `app.py` for the dashboard.
+Planned additions: `app.py` for the dashboard.
 
 ## Dataset
 
@@ -93,6 +95,13 @@ units, and scientific caveats are documented in [`data/README.md`](./data/README
    .venv\Scripts\Activate.ps1
    ```
 
+3. Register the virtual environment as a Jupyter kernel (needed for the EDA
+   notebook):
+
+   ```powershell
+   .venv\Scripts\python.exe -m ipykernel install --user --name housing --display-name "Python (housing)"
+   ```
+
 ## Usage
 
 ```python
@@ -106,6 +115,24 @@ print(summary)
 `validate_frame` checks the row count, feature names, numeric dtypes, missing
 values, and the historical target range. It returns a small summary dictionary
 instead of silently accepting a corrupted dataset.
+
+## Exploratory data analysis
+
+Open the notebook with:
+
+```powershell
+.venv\Scripts\jupyter.exe notebook notebooks\01_eda.ipynb
+```
+
+Select the **Python (housing)** kernel. The notebook covers:
+
+- dataset shape, dtypes, and missing values
+- target distribution and the `$500,000` cap
+- feature distributions
+- the correlation matrix
+- house values on a California map
+
+## Model comparison and residual analysis
 
 Run the model comparison workflow:
 

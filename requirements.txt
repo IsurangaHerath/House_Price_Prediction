@@ -15,6 +15,8 @@ pytest==9.1.1
 # --- Exploratory analysis and notebook execution (used by the EDA notebook) --
 matplotlib==3.8.4
 seaborn==0.13.2
+notebook==7.6.5
+ipykernel==7.4.0
 nbconvert==7.17.1
 
 # Note: joblib is installed automatically as a dependency of scikit-learn and
