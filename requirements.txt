@@ -19,5 +19,8 @@ notebook==7.6.5
 ipykernel==7.4.0
 nbconvert==7.17.1
 
+# --- Dashboard (used by app.py) ----------------------------------------------
+streamlit==1.67.0
+
 # Note: joblib is installed automatically as a dependency of scikit-learn and
 # is intentionally not pinned here.

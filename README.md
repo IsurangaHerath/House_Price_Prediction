@@ -18,11 +18,11 @@ applications.
 | Exploratory data analysis notebook | Complete |
 | Baseline and regression models | Complete, tested |
 | Model comparison and residual analysis | Complete, tested |
-| Streamlit dashboard | Not started |
+| Streamlit dashboard | Complete |
 
 The training and analysis workflows are reproducible with
-`python -m src.housing.train` and `python -m src.housing.analyze`. Measured
-results are stored in
+`python -m src.housing.train` and `python -m src.housing.analyze`. The
+dashboard runs with `streamlit run app.py`. Measured results are stored in
 [`reports/baseline_results.md`](./reports/baseline_results.md).
 
 ## Repository layout
@@ -32,6 +32,7 @@ house-price-prediction-ml/
 ├── .gitignore                 # excludes venvs, caches, and generated artifacts
 ├── README.md                  # this file
 ├── requirements.txt           # pinned dependencies
+├── app.py                     # Streamlit dashboard
 ├── data/
 │   ├── README.md              # dataset provenance, units, and caveats
 │   └── california_housing.csv # committed dataset (20,640 rows, 9 columns)
@@ -47,17 +48,17 @@ house-price-prediction-ml/
 │       ├── models.py          # model definitions and cross-validation
 │       ├── evaluate.py        # regression metrics and residual summaries
 │       ├── train.py           # training and evaluation workflow
-│       └── analyze.py         # residual analysis and plots
+│       ├── analyze.py         # residual analysis and plots
+│       └── predict.py         # dashboard prediction helpers
 └── tests/
     ├── test_data.py
     ├── test_features.py
     ├── test_evaluate.py
     ├── test_models.py
     ├── test_train.py
-    └── test_analyze.py
+    ├── test_analyze.py
+    └── test_predict.py
 ```
-
-Planned additions: `app.py` for the dashboard.
 
 ## Dataset
 
@@ -132,7 +133,7 @@ Select the **Python (housing)** kernel. The notebook covers:
 - the correlation matrix
 - house values on a California map
 
-## Model comparison and residual analysis
+## Running the workflows
 
 Run the model comparison workflow:
 
@@ -152,6 +153,26 @@ Run the residual analysis:
 
 This trains the same models, summarizes the best model's residuals, and saves
 residual plots to `reports/figures/`.
+
+## Dashboard
+
+Start the Streamlit app:
+
+```powershell
+.venv\Scripts\python.exe -m streamlit run app.py
+```
+
+The dashboard has three tabs:
+
+- **Predict** — enter block-group features and get an estimated median house
+  value in dollars.
+- **Model comparison** — cross-validation and holdout scores for all four
+  models.
+- **Data overview** — dataset summary and the target distribution.
+
+The app trains the models on first launch and caches the results, so later
+page loads are fast. The prediction form uses the model that won
+cross-validation.
 
 ## Model comparison and residual analysis
 
@@ -192,7 +213,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 24 tests currently pass.
+All 28 tests currently pass.
 
 ## Reproducibility
 
@@ -204,6 +225,8 @@ All 24 tests currently pass.
   (100 trees).
 - Metrics: MAE, RMSE, and R² in target units, plus MAE/RMSE in dollars.
 - Residuals: mean/median error, underprediction rate, and cap-vs-uncapped MAE.
+- Dashboard: reuses the training workflow, caches results, and fits the
+  winning model on all rows for predictions.
 
 ## Known limitations
 
