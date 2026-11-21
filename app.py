@@ -11,6 +11,7 @@ from src.housing.data import (
     load_dataset,
     validate_frame,
 )
+from src.housing.finalize import MODEL_PATH, load_model
 from src.housing.models import build_models
 from src.housing.predict import (
     default_features,
@@ -30,15 +31,30 @@ def get_data():
     return df
 
 
+@st.cache_resource(show_spinner="Loading the saved model...")
+def get_saved_model():
+    """Load the saved artifact, or return None when it is missing."""
+    if MODEL_PATH.exists():
+        return load_model()
+    return None
+
+
 @st.cache_data(persist="disk", show_spinner="Comparing models...")
 def get_results():
-    """Run the model comparison once and reuse the results."""
+    """Use saved comparison results, or train the models."""
+    saved = get_saved_model()
+    if saved is not None and saved.get("results"):
+        return saved["results"]
     return train_and_evaluate()
 
 
 @st.cache_resource(show_spinner="Fitting the best model...")
 def get_model(model_name):
-    """Fit the winning model on all rows for the prediction form."""
+    """Use the saved model when it matches, otherwise fit a fresh one."""
+    saved = get_saved_model()
+    if saved is not None and saved["metadata"]["model"] == model_name:
+        return saved["model"]
+
     df = get_data()
     model = build_models()[model_name]
     model.fit(df[EXPECTED_FEATURES], df[TARGET_COLUMN])
@@ -168,6 +184,19 @@ def render_models_tab(results):
     best_row = results["test_results"].loc[
         results["test_results"]["model"] == best
     ].iloc[0]
+
+    saved = get_saved_model()
+    if saved is not None:
+        meta = saved["metadata"]
+        st.caption(
+            f"Saved model: **{meta['model']}** trained on "
+            f"{meta['rows']:,} rows at {meta['saved_at']}."
+        )
+    else:
+        st.caption(
+            "No saved model artifact found. Run "
+            "`python -m src.housing.finalize` to create one."
+        )
 
     st.subheader("Best model")
     col1, col2, col3, col4 = st.columns(4)

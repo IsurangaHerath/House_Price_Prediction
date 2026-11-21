@@ -21,6 +21,7 @@ applications.
 | Baseline and regression models | Complete, tested |
 | Model comparison and residual analysis | Complete, tested |
 | Streamlit dashboard | Complete |
+| Saved model artifact | Complete, tested |
 | Continuous integration | Configured |
 
 The training and analysis workflows are reproducible with
@@ -46,6 +47,8 @@ house-price-prediction-ml/
 │   └── baseline_results.md    # measured baseline metrics
 ├── notebooks/
 │   └── 01_eda.ipynb           # exploratory data analysis
+├── models/
+│   └── best_model.joblib      # generated artifact, ignored by Git
 ├── src/
 │   └── housing/
 │       ├── __init__.py
@@ -55,7 +58,8 @@ house-price-prediction-ml/
 │       ├── evaluate.py        # regression metrics and residual summaries
 │       ├── train.py           # training and evaluation workflow
 │       ├── analyze.py         # residual analysis and plots
-│       └── predict.py         # dashboard prediction helpers
+│       ├── predict.py         # dashboard prediction helpers
+│       └── finalize.py        # train, save, and load the final model
 └── tests/
     ├── test_data.py
     ├── test_features.py
@@ -63,7 +67,8 @@ house-price-prediction-ml/
     ├── test_models.py
     ├── test_train.py
     ├── test_analyze.py
-    └── test_predict.py
+    ├── test_predict.py
+    └── test_finalize.py
 ```
 
 ## Dataset
@@ -176,9 +181,23 @@ The dashboard has three tabs:
   models.
 - **Data overview** — dataset summary and the target distribution.
 
-The app trains the models on first launch and caches the results, so later
-page loads are fast. The prediction form uses the model that won
-cross-validation.
+The app loads `models/best_model.joblib` when it exists, including the saved
+comparison results, so startup takes about 10 seconds instead of retraining for
+over a minute. Without the artifact it trains the models and caches them. The
+prediction form uses the model that won cross-validation.
+
+## Saved model
+
+Create or refresh the final model artifact:
+
+```powershell
+.venv\Scripts\python.exe -m src.housing.finalize
+```
+
+This runs cross-validation to pick the winner, refits it on all 20,640 rows,
+and saves the model, its metadata, and the comparison tables with joblib. The
+compressed file is about 40 MB and is ignored by Git, so generate it after a
+fresh clone. Loading is handled by `src/housing/finalize.py`.
 
 ## Model comparison and residual analysis
 
@@ -219,7 +238,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 28 tests currently pass locally, and the same suite runs on every push and
+All 29 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -245,6 +264,8 @@ The badge at the top of this README shows the latest result.
 - Residuals: mean/median error, underprediction rate, and cap-vs-uncapped MAE.
 - Dashboard: reuses the training workflow, caches results, and fits the
   winning model on all rows for predictions.
+- Final model: `python -m src.housing.finalize` saves a compressed artifact
+  with its metadata and comparison results.
 
 ## Known limitations
 
