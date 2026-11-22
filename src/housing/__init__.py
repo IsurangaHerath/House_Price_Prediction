@@ -16,4 +16,5 @@ __all__ = [
     "predict",
     "finalize",
     "tuning",
+    "robustness",
 ]

@@ -37,9 +37,10 @@ were made so it matches Scikit-learn's schema:
    left unchanged so the raw values stay auditable.
 4. `ocean_proximity` was dropped because Scikit-learn's dataset does not include
    it and it is not used by this project.
-5. Missing `AveBedrms` values (207 rows) are imputed at load time in
-   `src/housing/data.py` as `AveRooms * 0.5`, an explicit approximation rather
-   than a silent default.
+5. Missing `AveBedrms` values (207 rows) are left as `NaN` by the loader.
+   Each model pipeline fills them with `AveRooms` times the median
+   bedroom-to-room share learned from its training rows (`BedroomImputer` in
+   `src/housing/models.py`).
 
 After these transformations, the in-memory frame matches Scikit-learn's schema
 and units. All other values are unchanged from the 1990 census source.

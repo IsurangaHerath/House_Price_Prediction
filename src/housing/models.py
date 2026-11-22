@@ -1,6 +1,7 @@
 """Models and a simple cross-validation helper."""
 
 import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression, Ridge
@@ -19,33 +20,64 @@ SCORING = {
 }
 
 
+class BedroomImputer(BaseEstimator, TransformerMixin):
+    """Fill missing AveBedrms with AveRooms times the median bedroom share.
+
+    The share is learned in ``fit``, so it only uses training rows.
+    """
+
+    def fit(self, X, y=None):
+        ratio = X["AveBedrms"] / X["AveRooms"]
+        self.bedroom_share_ = float(ratio.median())
+        return self
+
+    def transform(self, X):
+        X = X.copy()
+        X["AveBedrms"] = X["AveBedrms"].fillna(
+            X["AveRooms"] * self.bedroom_share_
+        )
+        return X
+
+
+def with_imputer(*steps):
+    """Build a pipeline that imputes bedrooms before the given steps."""
+    return Pipeline([("impute", BedroomImputer()), *steps])
+
+
+def build_random_forest(**params):
+    """Return the random forest, using the tuned settings by default."""
+    settings = {
+        "n_estimators": 100,
+        # These settings came from the tuning workflow in tuning.py.
+        "max_depth": 30,
+        "max_features": 0.5,
+        "min_samples_leaf": 1,
+        "random_state": RANDOM_STATE,
+        **params,
+    }
+    return RandomForestRegressor(**settings)
+
+
 def build_models():
     """Return the models we want to compare."""
     return {
         # Baseline: always predicts the average house value.
-        "dummy_mean": DummyRegressor(strategy="mean"),
+        "dummy_mean": with_imputer(
+            ("regressor", DummyRegressor(strategy="mean")),
+        ),
         # Linear regression with scaling inside a pipeline.
-        "linear_regression": Pipeline(
-            [
-                ("scaler", StandardScaler()),
-                ("regressor", LinearRegression()),
-            ]
+        "linear_regression": with_imputer(
+            ("scaler", StandardScaler()),
+            ("regressor", LinearRegression()),
         ),
         # Ridge adds a small penalty to keep coefficients stable.
-        "ridge": Pipeline(
-            [
-                ("scaler", StandardScaler()),
-                ("regressor", Ridge(alpha=1.0)),
-            ]
+        "ridge": with_imputer(
+            ("scaler", StandardScaler()),
+            ("regressor", Ridge(alpha=1.0)),
         ),
         # Random forest can learn non-linear relationships.
-        # These settings came from the tuning workflow in tuning.py.
-        "random_forest": RandomForestRegressor(
-            n_estimators=100,
-            max_depth=30,
-            max_features=0.5,
-            min_samples_leaf=1,
-            random_state=RANDOM_STATE,
+        "random_forest": with_imputer(
+            ("regressor", build_random_forest()),
         ),
     }
 

@@ -16,7 +16,7 @@ from .models import (
 TEST_SIZE = 0.2
 
 
-def split_train_test(df):
+def split_train_test(df, random_state=RANDOM_STATE):
     """Split the data into training and test sets."""
     X, y = split_features_target(df)
 
@@ -24,7 +24,7 @@ def split_train_test(df):
         X,
         y,
         test_size=TEST_SIZE,
-        random_state=RANDOM_STATE,
+        random_state=random_state,
     )
 
 

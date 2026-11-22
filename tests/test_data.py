@@ -45,13 +45,19 @@ def test_target_is_in_100k_units():
     assert df[hd.TARGET_COLUMN].max() == pytest.approx(5.0, abs=0.01)
 
 
-def test_no_missing_values():
-    """The dataset is complete by construction; validation must confirm."""
+def test_only_bedrooms_have_missing_values():
+    """Only the known AveBedrms gaps stay missing; the pipeline imputes them."""
     df = hd.load_dataset()
     null_counts = df.isnull().sum()
-    assert int(null_counts.sum()) == 0, (
-        f"Found missing values: {null_counts[null_counts > 0].to_dict()}"
-    )
+    assert int(null_counts["AveBedrms"]) == hd.EXPECTED_MISSING
+    assert int(null_counts.drop("AveBedrms").sum()) == 0
+
+
+def test_unexpected_missing_values_raise():
+    df = hd.load_dataset()
+    df.loc[0, "MedInc"] = float("nan")
+    with pytest.raises(ValueError, match="Unexpected missing values"):
+        hd.validate_frame(df)
 
 
 def test_validation_summary():
@@ -61,7 +67,7 @@ def test_validation_summary():
     assert summary["rows"] == 20640
     assert summary["features"] == 8
     assert summary["columns"] == hd.EXPECTED_FEATURES + ["MedHouseVal"]
-    assert summary["null_total"] == 0
+    assert summary["null_total"] == hd.EXPECTED_MISSING
     # The cap count is an observed property; we only assert it is a
     # non-negative integer (the dataset has some capped rows).
     assert isinstance(summary["cap_count_at_5_0"], int)

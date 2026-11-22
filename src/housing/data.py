@@ -20,6 +20,11 @@ EXPECTED_ROWS = 20640
 TARGET_COLUMN = "MedHouseVal"
 TARGET_UNIT_USD = 100_000
 
+# AveBedrms has known gaps in the raw file. They stay as NaN here and are
+# imputed inside the model pipeline, so the fill is learned from training data.
+NULLABLE_COLUMNS = ["AveBedrms"]
+EXPECTED_MISSING = 207
+
 DATA_PATH = (
     Path(__file__).resolve().parent.parent.parent
     / "data"
@@ -34,7 +39,6 @@ def load_dataset():
     # The raw file stores total rooms, total bedrooms, and households.
     # Convert them to scikit-learn's per-household averages.
     households = df["AveOccup"]
-    df["AveBedrms"] = df["AveBedrms"].fillna(df["AveRooms"] * 0.5)
     df["AveRooms"] = df["AveRooms"] / households
     df["AveBedrms"] = df["AveBedrms"] / households
     df["AveOccup"] = df["Population"] / households
@@ -85,10 +89,15 @@ def validate_frame(df):
                 f"Column '{col}' is non-numeric (dtype={df[col].dtype})"
             )
 
-    # No missing values are allowed.
-    null_total = int(df.isnull().sum().sum())
-    if null_total > 0:
-        errors.append(f"Found {null_total} missing values across all columns.")
+    # Only the known nullable columns may contain missing values.
+    null_counts = df.isnull().sum()
+    null_total = int(null_counts.sum())
+    unexpected = null_counts.drop(NULLABLE_COLUMNS, errors="ignore")
+    unexpected = unexpected[unexpected > 0]
+    if not unexpected.empty:
+        errors.append(
+            f"Unexpected missing values: {unexpected.to_dict()}"
+        )
 
     # Check the target range.
     min_target = None

@@ -67,10 +67,10 @@ Mean paired improvement: **0.004118** MAE (about **1.2%**).
 
 | Model | MAE | MAE ($) |
 |---|---:|---:|
-| Default random forest | 0.330565 | 33,057 |
-| Tuned random forest | 0.327104 | 32,710 |
+| Default random forest | 0.328911 | 32,891 |
+| Tuned random forest | 0.325238 | 32,524 |
 
-The tuned model is better by **0.003461** MAE, or about **$346** per
+The tuned model is better by **0.003673** MAE, or about **$367** per
 prediction. The gain is small but consistent with the cross-validation result.
 
 ## Conclusion

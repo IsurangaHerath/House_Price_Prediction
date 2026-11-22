@@ -5,7 +5,7 @@ from sklearn.model_selection import RandomizedSearchCV
 
 from .data import load_dataset, validate_frame
 from .evaluate import regression_metrics
-from .models import RANDOM_STATE, build_models
+from .models import RANDOM_STATE, with_imputer
 from .train import split_train_test
 
 # A small search space keeps the tuning run quick and reproducible.
@@ -27,12 +27,20 @@ def tune_random_forest(
     if param_distributions is None:
         param_distributions = PARAM_DISTRIBUTIONS
 
-    search = RandomizedSearchCV(
-        RandomForestRegressor(
-            n_estimators=100,
-            random_state=RANDOM_STATE,
+    # Search over sklearn's default forest, wrapped in the same imputer
+    # pipeline as the real models. Parameter names get the step prefix.
+    estimator = with_imputer(
+        (
+            "regressor",
+            RandomForestRegressor(n_estimators=100, random_state=RANDOM_STATE),
         ),
-        param_distributions=param_distributions,
+    )
+    search = RandomizedSearchCV(
+        estimator,
+        param_distributions={
+            f"regressor__{name}": values
+            for name, values in param_distributions.items()
+        },
         n_iter=n_iter,
         cv=cv,
         scoring="neg_mean_absolute_error",
@@ -52,7 +60,13 @@ def main():
 
     X_train, X_test, y_train, y_test = split_train_test(df)
 
-    default_model = build_models()["random_forest"]
+    # sklearn's default forest, not the tuned one from build_models().
+    default_model = with_imputer(
+        (
+            "regressor",
+            RandomForestRegressor(n_estimators=100, random_state=RANDOM_STATE),
+        ),
+    )
     default_model.fit(X_train, y_train)
     default_metrics = regression_metrics(
         y_test,

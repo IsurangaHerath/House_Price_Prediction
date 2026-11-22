@@ -17,5 +17,8 @@ def test_tune_random_forest_returns_a_search():
         cv=2,
     )
 
-    assert search.best_params_ == {"n_estimators": 5, "max_depth": 3}
+    assert search.best_params_ == {
+        "regressor__n_estimators": 5,
+        "regressor__max_depth": 3,
+    }
     assert len(search.predict(X)) == len(X)

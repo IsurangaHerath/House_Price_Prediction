@@ -64,7 +64,8 @@ house-price-prediction-ml/
 │       ├── analyze.py         # residual analysis and plots
 │       ├── predict.py         # dashboard prediction helpers
 │       ├── finalize.py        # train, save, and load the final model
-│       └── tuning.py          # random forest hyperparameter search
+│       ├── tuning.py          # random forest hyperparameter search
+│       └── robustness.py      # holdout score across split seeds
 └── tests/
     ├── test_data.py
     ├── test_features.py
@@ -74,7 +75,8 @@ house-price-prediction-ml/
     ├── test_analyze.py
     ├── test_predict.py
     ├── test_finalize.py
-    └── test_tuning.py
+    ├── test_tuning.py
+    └── test_robustness.py
 ```
 
 ## Dataset
@@ -223,7 +225,7 @@ max_depth=30, max_features=0.5, min_samples_leaf=1
 ```
 
 On the same five folds, mean MAE fell from **0.3351** to **0.3309**, and every
-fold improved. Holdout MAE fell from **0.3306** to **0.3271**. Full details are
+fold improved. Holdout MAE fell from **0.3289** to **0.3252**. Full details are
 in [`reports/tuning_results.md`](./reports/tuning_results.md).
 
 ## Model comparison and residual analysis
@@ -241,19 +243,19 @@ in [`reports/tuning_results.md`](./reports/tuning_results.md).
 
 | Model | MAE | RMSE | R² | MAE ($) |
 |---|---:|---:|---:|---:|
-| Random forest (tuned) | 0.327 | 0.502 | 0.808 | 32,710 |
-| Ridge | 0.573 | 0.803 | 0.508 | 57,325 |
-| Linear regression | 0.573 | 0.803 | 0.508 | 57,329 |
+| Random forest (tuned) | 0.325 | 0.501 | 0.809 | 32,524 |
+| Ridge | 0.535 | 0.748 | 0.574 | 53,451 |
+| Linear regression | 0.535 | 0.748 | 0.573 | 53,452 |
 | Dummy mean | 0.906 | 1.145 | 0.000 | 90,607 |
 
 The random forest is clearly the best model. Its holdout MAE is about
-**$32,700**, and it explains about **81%** of the variance.
+**$32,500**, and it explains about **81%** of the variance.
 
 Residual checks for the random forest:
 
-- mean residual: **-0.015** (slightly over-predicting on average)
-- underprediction rate: **41.1%**
-- MAE at the target cap: **0.757** vs **0.307** below the cap
+- mean residual: **-0.011** (slightly over-predicting on average)
+- underprediction rate: **41.6%**
+- MAE at the target cap: **0.761** vs **0.305** below the cap
 
 The much larger error at the cap is expected: many different high values all
 appear as `5.0`, so the model cannot separate them. Full details and caveats
@@ -265,7 +267,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 30 tests currently pass locally, and the same suite runs on every push and
+All 34 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -300,14 +302,16 @@ The badge at the top of this README shows the latest result.
 
 1. **Target ceiling.** Values at 5.0 are censored at the $500k census cap, so
    high-value districts are harder to predict. The random forest's MAE is
-   about 0.757 on capped rows versus 0.307 on the rest.
+   about 0.761 on capped rows versus 0.305 on the rest.
 2. **Geographic leakage.** Rows are geographically clustered, so a random
    train/test split places neighbouring blocks in both folds. Reported scores
    describe prediction *within* California, not in an unseen region.
 3. **Historical data.** The values describe 1990, not the current housing market.
-4. **Imputed bedrooms.** The 207 missing `AveBedrms` values are filled with
-   `AveRooms * 0.5`, so those rows are approximate. With the current seed, all
-   207 rows fall in the holdout set.
+4. **Imputed bedrooms.** The 207 missing `AveBedrms` values are imputed inside
+   the model pipeline from the training rows' median bedroom share, so those
+   rows are approximate. With seed 42 all 207 fall in the holdout set. Across
+   five split seeds the holdout MAE is 0.322 ± 0.005
+   (`python -m src.housing.robustness`).
 
 ## License
 
