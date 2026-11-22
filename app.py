@@ -19,6 +19,7 @@ from src.housing.predict import (
     predict_house_value,
 )
 from src.housing.train import train_and_evaluate
+from src.housing.uncertainty import prediction_interval
 
 CAP_VALUE = 5.0
 
@@ -163,8 +164,15 @@ def render_predict_tab(df, results):
 
     model = get_model(best)
     value = predict_house_value(model, features)
+    interval = prediction_interval(model, features).iloc[0]
 
     st.metric("Predicted median house value", format_usd(value))
+    st.caption(
+        "Likely range: "
+        f"**{format_usd(interval['low'] * TARGET_UNIT_USD)} to "
+        f"{format_usd(interval['high'] * TARGET_UNIT_USD)}** "
+        "(10th to 90th percentile across the forest's trees)."
+    )
 
     if value >= CAP_VALUE * TARGET_UNIT_USD:
         st.info(

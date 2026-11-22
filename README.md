@@ -25,15 +25,17 @@ applications.
 | Split-seed robustness | Complete, tested |
 | Spatial validation | Complete, tested |
 | Model explainability | Complete, tested |
+| Prediction uncertainty | Complete, tested |
 | Model card | Complete |
 | Streamlit dashboard | Complete |
 | Saved model artifact | Complete, tested |
 | Continuous integration | Configured |
 
-The training, tuning, robustness, spatial-validation, explainability, and
-analysis workflows are reproducible with `python -m src.housing.train`,
-`python -m src.housing.tuning`, `python -m src.housing.robustness`,
-`python -m src.housing.spatial`, `python -m src.housing.explain`, and
+The training, tuning, robustness, spatial-validation, explainability,
+uncertainty, and analysis workflows are reproducible with
+`python -m src.housing.train`, `python -m src.housing.tuning`,
+`python -m src.housing.robustness`, `python -m src.housing.spatial`,
+`python -m src.housing.explain`, `python -m src.housing.uncertainty`, and
 `python -m src.housing.analyze`. The dashboard runs with
 `streamlit run app.py`. Measured results are stored in the
 [`reports/`](./reports) folder, and intended use and ethical limits are
@@ -58,6 +60,7 @@ house-price-prediction-ml/
 │   ├── tuning_results.md      # random forest tuning comparison
 │   ├── spatial_validation.md  # scores on held-out regions
 │   ├── explainability.md      # importance and partial dependence
+│   ├── uncertainty.md         # forest range and coverage
 │   ├── model_card.md          # intended use, metrics, and limits
 │   └── feature_importance.csv # permutation importance values
 ├── notebooks/
@@ -78,7 +81,8 @@ house-price-prediction-ml/
 │       ├── tuning.py          # random forest hyperparameter search
 │       ├── robustness.py      # holdout score across split seeds
 │       ├── spatial.py         # scores on held-out geographic regions
-│       └── explain.py         # permutation importance and dependence
+│       ├── explain.py         # permutation importance and dependence
+│       └── uncertainty.py     # prediction range from the forest's trees
 └── tests/
     ├── test_data.py
     ├── test_features.py
@@ -91,7 +95,8 @@ house-price-prediction-ml/
     ├── test_tuning.py
     ├── test_robustness.py
     ├── test_spatial.py
-    └── test_explain.py
+    ├── test_explain.py
+    └── test_uncertainty.py
 ```
 
 ## Dataset
@@ -206,6 +211,15 @@ Run the explainability analysis:
 This computes permutation importance and partial dependence on the holdout
 set, then saves the importance table and plots.
 
+Run the uncertainty check:
+
+```powershell
+.venv\Scripts\python.exe -m src.housing.uncertainty
+```
+
+This uses the forest's 100 trees to build a 10th to 90th percentile range and
+reports how often the holdout truth falls inside it.
+
 Run the residual analysis:
 
 ```powershell
@@ -226,7 +240,7 @@ Start the Streamlit app:
 The dashboard has three tabs:
 
 - **Predict** — enter block-group features and get an estimated median house
-  value in dollars.
+  value in dollars, plus a likely range from the forest's trees.
 - **Model comparison** — cross-validation and holdout scores for all four
   models.
 - **Data overview** — dataset summary and the target distribution.
@@ -311,6 +325,24 @@ dependence shows predicted value rising with income and falling from the coast
 toward inland areas. These are associations, not causal effects. Full details
 are in [`reports/explainability.md`](./reports/explainability.md).
 
+## Prediction uncertainty
+
+Each tree in the forest predicts a slightly different value. The dashboard
+shows the 10th to 90th percentile of those 100 predictions as a likely range.
+`python -m src.housing.uncertainty` measures that range on the holdout set:
+
+| Metric | Value |
+|---|---:|
+| Coverage | 85.2% |
+| Mean width | 1.161 ($116,120) |
+| Median width | 0.988 ($98,770) |
+| Coverage at the target cap | 83.7% |
+
+The requested range was 80%, so the measured coverage is slightly
+conservative. The range describes how much the trees disagree; it is not a
+guarantee and does not include market or sampling uncertainty. Details are in
+[`reports/uncertainty.md`](./reports/uncertainty.md).
+
 ## Model card
 
 [`reports/model_card.md`](./reports/model_card.md) records the model's intended
@@ -357,7 +389,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 38 tests currently pass locally, and the same suite runs on every push and
+All 41 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -388,6 +420,8 @@ The badge at the top of this README shows the latest result.
   `GroupKFold`.
 - Explainability: permutation importance and partial dependence on the holdout
   set.
+- Uncertainty: the 10th to 90th percentile of the forest's tree predictions,
+  checked against holdout coverage.
 - Metrics: MAE, RMSE, and R² in target units, plus MAE/RMSE in dollars.
 - Residuals: mean/median error, underprediction rate, and cap-vs-uncapped MAE.
 - Dashboard: reuses the training workflow, caches results, and fits the
@@ -411,6 +445,9 @@ The badge at the top of this README shows the latest result.
    rows are approximate. With seed 42 all 207 fall in the holdout set. Across
    five split seeds the holdout MAE is 0.322 ± 0.005
    (`python -m src.housing.robustness`).
+5. **Ranges are not guarantees.** The dashboard's likely range is the spread of
+   the forest's trees, not a calibrated confidence interval. It covers 85% of
+   holdout rows, but coverage on a new region is unmeasured.
 
 ## License
 

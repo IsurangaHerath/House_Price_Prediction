@@ -19,4 +19,5 @@ __all__ = [
     "robustness",
     "spatial",
     "explain",
+    "uncertainty",
 ]

@@ -92,6 +92,14 @@ is not a lucky split.
 Capped rows are much harder because many different high values all appear as
 `5.0`.
 
+### Prediction range
+
+The 10th to 90th percentile of the forest's 100 tree predictions covers
+**85.2%** of holdout rows. Mean width is **1.161** (`$116,120`) and median
+width is **0.988** (`$98,770`). At the `$500,000` cap, coverage is **83.7%**.
+The range reflects disagreement between trees, not market or sampling
+uncertainty.
+
 Full reports: [`baseline_results.md`](./baseline_results.md),
 [`tuning_results.md`](./tuning_results.md),
 [`spatial_validation.md`](./spatial_validation.md), and
@@ -140,6 +148,7 @@ associations, not causal effects.
 .venv\Scripts\python.exe -m src.housing.robustness
 .venv\Scripts\python.exe -m src.housing.spatial
 .venv\Scripts\python.exe -m src.housing.explain
+.venv\Scripts\python.exe -m src.housing.uncertainty
 .venv\Scripts\python.exe -m src.housing.analyze
 .venv\Scripts\python.exe -m src.housing.finalize
 ```
