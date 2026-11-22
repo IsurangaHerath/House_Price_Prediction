@@ -24,18 +24,20 @@ applications.
 | Pipeline-based imputation | Complete, tested |
 | Split-seed robustness | Complete, tested |
 | Spatial validation | Complete, tested |
+| Model explainability | Complete, tested |
+| Model card | Complete |
 | Streamlit dashboard | Complete |
 | Saved model artifact | Complete, tested |
 | Continuous integration | Configured |
 
-The training, tuning, robustness, spatial-validation, and analysis workflows
-are reproducible with `python -m src.housing.train`,
+The training, tuning, robustness, spatial-validation, explainability, and
+analysis workflows are reproducible with `python -m src.housing.train`,
 `python -m src.housing.tuning`, `python -m src.housing.robustness`,
-`python -m src.housing.spatial`, and `python -m src.housing.analyze`. The
-dashboard runs with `streamlit run app.py`. Measured results are stored in
-[`reports/baseline_results.md`](./reports/baseline_results.md),
-[`reports/tuning_results.md`](./reports/tuning_results.md), and
-[`reports/spatial_validation.md`](./reports/spatial_validation.md).
+`python -m src.housing.spatial`, `python -m src.housing.explain`, and
+`python -m src.housing.analyze`. The dashboard runs with
+`streamlit run app.py`. Measured results are stored in the
+[`reports/`](./reports) folder, and intended use and ethical limits are
+documented in the [`model card`](./reports/model_card.md).
 
 ## Repository layout
 
@@ -54,7 +56,10 @@ house-price-prediction-ml/
 ├── reports/
 │   ├── baseline_results.md    # measured baseline metrics
 │   ├── tuning_results.md      # random forest tuning comparison
-│   └── spatial_validation.md  # scores on held-out regions
+│   ├── spatial_validation.md  # scores on held-out regions
+│   ├── explainability.md      # importance and partial dependence
+│   ├── model_card.md          # intended use, metrics, and limits
+│   └── feature_importance.csv # permutation importance values
 ├── notebooks/
 │   └── 01_eda.ipynb           # exploratory data analysis
 ├── models/
@@ -72,7 +77,8 @@ house-price-prediction-ml/
 │       ├── finalize.py        # train, save, and load the final model
 │       ├── tuning.py          # random forest hyperparameter search
 │       ├── robustness.py      # holdout score across split seeds
-│       └── spatial.py         # scores on held-out geographic regions
+│       ├── spatial.py         # scores on held-out geographic regions
+│       └── explain.py         # permutation importance and dependence
 └── tests/
     ├── test_data.py
     ├── test_features.py
@@ -84,7 +90,8 @@ house-price-prediction-ml/
     ├── test_finalize.py
     ├── test_tuning.py
     ├── test_robustness.py
-    └── test_spatial.py
+    ├── test_spatial.py
+    └── test_explain.py
 ```
 
 ## Dataset
@@ -190,6 +197,15 @@ Run the spatial validation:
 This groups nearby blocks into 10 regions and holds out one region at a time,
 so neighbouring blocks cannot appear in both training and test.
 
+Run the explainability analysis:
+
+```powershell
+.venv\Scripts\python.exe -m src.housing.explain
+```
+
+This computes permutation importance and partial dependence on the holdout
+set, then saves the importance table and plots.
+
 Run the residual analysis:
 
 ```powershell
@@ -274,6 +290,34 @@ model still beats the mean baseline, but it does not generalise as well across
 geography as the random-split number suggests. Per-region details are in
 [`reports/spatial_validation.md`](./reports/spatial_validation.md).
 
+## Explainability
+
+Permutation importance on the holdout set, in MAE increase when a feature is
+shuffled:
+
+| Feature | Increase in MAE |
+|---|---:|
+| MedInc | 0.417 |
+| Latitude | 0.322 |
+| Longitude | 0.280 |
+| AveOccup | 0.153 |
+| HouseAge | 0.051 |
+| AveRooms | 0.045 |
+| AveBedrms | 0.008 |
+| Population | 0.005 |
+
+Median income is the strongest driver, followed by location. Partial
+dependence shows predicted value rising with income and falling from the coast
+toward inland areas. These are associations, not causal effects. Full details
+are in [`reports/explainability.md`](./reports/explainability.md).
+
+## Model card
+
+[`reports/model_card.md`](./reports/model_card.md) records the model's intended
+use, training data, evaluation results, and ethical limitations. The headline
+point: this is a 1990 block-group estimator for learning and demonstration, not
+a tool for appraising individual homes or making decisions about people.
+
 ## Model comparison and residual analysis
 
 ### Cross-validation on the training set
@@ -313,7 +357,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 36 tests currently pass locally, and the same suite runs on every push and
+All 38 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -342,6 +386,8 @@ The badge at the top of this README shows the latest result.
 - Robustness: holdout MAE is checked across five random split seeds.
 - Spatial validation: 10 KMeans regions are held out one at a time with
   `GroupKFold`.
+- Explainability: permutation importance and partial dependence on the holdout
+  set.
 - Metrics: MAE, RMSE, and R² in target units, plus MAE/RMSE in dollars.
 - Residuals: mean/median error, underprediction rate, and cap-vs-uncapped MAE.
 - Dashboard: reuses the training workflow, caches results, and fits the
