@@ -113,6 +113,7 @@ split.
   (0 in training). See "Split-seed robustness" below.
 - The split is random, so nearby census blocks appear in both training and test.
   This is geographic leakage and means the scores do not measure performance in
-  an unseen region.
+  an unseen region. See [`spatial_validation.md`](./spatial_validation.md) for
+  the held-out-region result.
 - Values at the `$500,000` cap are censored at 5.0.
 - The data describes 1990, not the current housing market.

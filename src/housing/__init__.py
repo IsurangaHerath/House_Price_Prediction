@@ -17,4 +17,5 @@ __all__ = [
     "finalize",
     "tuning",
     "robustness",
+    "spatial",
 ]

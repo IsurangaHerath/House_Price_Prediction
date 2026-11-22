@@ -23,16 +23,19 @@ applications.
 | Hyperparameter tuning | Complete, tested |
 | Pipeline-based imputation | Complete, tested |
 | Split-seed robustness | Complete, tested |
+| Spatial validation | Complete, tested |
 | Streamlit dashboard | Complete |
 | Saved model artifact | Complete, tested |
 | Continuous integration | Configured |
 
-The training, tuning, robustness, and analysis workflows are reproducible with
-`python -m src.housing.train`, `python -m src.housing.tuning`,
-`python -m src.housing.robustness`, and `python -m src.housing.analyze`. The
+The training, tuning, robustness, spatial-validation, and analysis workflows
+are reproducible with `python -m src.housing.train`,
+`python -m src.housing.tuning`, `python -m src.housing.robustness`,
+`python -m src.housing.spatial`, and `python -m src.housing.analyze`. The
 dashboard runs with `streamlit run app.py`. Measured results are stored in
-[`reports/baseline_results.md`](./reports/baseline_results.md) and
-[`reports/tuning_results.md`](./reports/tuning_results.md).
+[`reports/baseline_results.md`](./reports/baseline_results.md),
+[`reports/tuning_results.md`](./reports/tuning_results.md), and
+[`reports/spatial_validation.md`](./reports/spatial_validation.md).
 
 ## Repository layout
 
@@ -50,7 +53,8 @@ house-price-prediction-ml/
 │   └── california_housing.csv # committed dataset (20,640 rows, 9 columns)
 ├── reports/
 │   ├── baseline_results.md    # measured baseline metrics
-│   └── tuning_results.md      # random forest tuning comparison
+│   ├── tuning_results.md      # random forest tuning comparison
+│   └── spatial_validation.md  # scores on held-out regions
 ├── notebooks/
 │   └── 01_eda.ipynb           # exploratory data analysis
 ├── models/
@@ -67,7 +71,8 @@ house-price-prediction-ml/
 │       ├── predict.py         # dashboard prediction helpers
 │       ├── finalize.py        # train, save, and load the final model
 │       ├── tuning.py          # random forest hyperparameter search
-│       └── robustness.py      # holdout score across split seeds
+│       ├── robustness.py      # holdout score across split seeds
+│       └── spatial.py         # scores on held-out geographic regions
 └── tests/
     ├── test_data.py
     ├── test_features.py
@@ -78,7 +83,8 @@ house-price-prediction-ml/
     ├── test_predict.py
     ├── test_finalize.py
     ├── test_tuning.py
-    └── test_robustness.py
+    ├── test_robustness.py
+    └── test_spatial.py
 ```
 
 ## Dataset
@@ -175,6 +181,15 @@ Run the random forest tuning search:
 This samples a small set of hyperparameters on the training set and compares
 the tuned model with the default on the holdout set.
 
+Run the spatial validation:
+
+```powershell
+.venv\Scripts\python.exe -m src.housing.spatial
+```
+
+This groups nearby blocks into 10 regions and holds out one region at a time,
+so neighbouring blocks cannot appear in both training and test.
+
 Run the residual analysis:
 
 ```powershell
@@ -241,6 +256,24 @@ and replaces the earlier fixed fill.
 80/20 splits. Holdout MAE is **0.3222 ± 0.0052**, so the project's seed is not
 a lucky outlier.
 
+## Spatial validation
+
+A random split puts neighbouring blocks in both training and test.
+`python -m src.housing.spatial` groups blocks into 10 regions with KMeans and
+holds out one region at a time with `GroupKFold`.
+
+| Metric | Random holdout | Spatial holdout |
+|---|---:|---:|
+| MAE | 0.325 | 0.538 |
+| MAE ($) | 32,524 | 53,777 |
+| RMSE | 0.501 | 0.743 |
+| R² | 0.809 | 0.585 |
+
+On a genuinely unseen region, error rises by about **$21,000** per block. The
+model still beats the mean baseline, but it does not generalise as well across
+geography as the random-split number suggests. Per-region details are in
+[`reports/spatial_validation.md`](./reports/spatial_validation.md).
+
 ## Model comparison and residual analysis
 
 ### Cross-validation on the training set
@@ -280,7 +313,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 34 tests currently pass locally, and the same suite runs on every push and
+All 36 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -307,6 +340,8 @@ The badge at the top of this README shows the latest result.
 - Imputation: missing bedrooms are filled inside each model pipeline using
   the training rows' median bedroom share.
 - Robustness: holdout MAE is checked across five random split seeds.
+- Spatial validation: 10 KMeans regions are held out one at a time with
+  `GroupKFold`.
 - Metrics: MAE, RMSE, and R² in target units, plus MAE/RMSE in dollars.
 - Residuals: mean/median error, underprediction rate, and cap-vs-uncapped MAE.
 - Dashboard: reuses the training workflow, caches results, and fits the
@@ -320,8 +355,10 @@ The badge at the top of this README shows the latest result.
    high-value districts are harder to predict. The random forest's MAE is
    about 0.761 on capped rows versus 0.305 on the rest.
 2. **Geographic leakage.** Rows are geographically clustered, so a random
-   train/test split places neighbouring blocks in both folds. Reported scores
-   describe prediction *within* California, not in an unseen region.
+   train/test split places neighbouring blocks in both folds. The random-split
+   MAE is 0.325, but holding out whole regions raises it to 0.538
+   (`python -m src.housing.spatial`). Treat the random-split score as an
+   in-geography estimate, not a promise for a new region.
 3. **Historical data.** The values describe 1990, not the current housing market.
 4. **Imputed bedrooms.** The 207 missing `AveBedrms` values are imputed inside
    the model pipeline from the training rows' median bedroom share, so those
