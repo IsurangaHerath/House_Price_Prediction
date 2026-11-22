@@ -20,14 +20,17 @@ applications.
 | Exploratory data analysis notebook | Complete |
 | Baseline and regression models | Complete, tested |
 | Model comparison and residual analysis | Complete, tested |
+| Hyperparameter tuning | Complete, tested |
 | Streamlit dashboard | Complete |
 | Saved model artifact | Complete, tested |
 | Continuous integration | Configured |
 
-The training and analysis workflows are reproducible with
-`python -m src.housing.train` and `python -m src.housing.analyze`. The
-dashboard runs with `streamlit run app.py`. Measured results are stored in
-[`reports/baseline_results.md`](./reports/baseline_results.md).
+The training, tuning, and analysis workflows are reproducible with
+`python -m src.housing.train`, `python -m src.housing.tuning`, and
+`python -m src.housing.analyze`. The dashboard runs with
+`streamlit run app.py`. Measured results are stored in
+[`reports/baseline_results.md`](./reports/baseline_results.md) and
+[`reports/tuning_results.md`](./reports/tuning_results.md).
 
 ## Repository layout
 
@@ -44,7 +47,8 @@ house-price-prediction-ml/
 │   ├── README.md              # dataset provenance, units, and caveats
 │   └── california_housing.csv # committed dataset (20,640 rows, 9 columns)
 ├── reports/
-│   └── baseline_results.md    # measured baseline metrics
+│   ├── baseline_results.md    # measured baseline metrics
+│   └── tuning_results.md      # random forest tuning comparison
 ├── notebooks/
 │   └── 01_eda.ipynb           # exploratory data analysis
 ├── models/
@@ -59,7 +63,8 @@ house-price-prediction-ml/
 │       ├── train.py           # training and evaluation workflow
 │       ├── analyze.py         # residual analysis and plots
 │       ├── predict.py         # dashboard prediction helpers
-│       └── finalize.py        # train, save, and load the final model
+│       ├── finalize.py        # train, save, and load the final model
+│       └── tuning.py          # random forest hyperparameter search
 └── tests/
     ├── test_data.py
     ├── test_features.py
@@ -68,7 +73,8 @@ house-price-prediction-ml/
     ├── test_train.py
     ├── test_analyze.py
     ├── test_predict.py
-    └── test_finalize.py
+    ├── test_finalize.py
+    └── test_tuning.py
 ```
 
 ## Dataset
@@ -156,6 +162,15 @@ This loads and validates the data, splits it 80/20, runs 5-fold
 cross-validation on the training set, then reports holdout metrics for the
 dummy, linear regression, ridge, and random forest models.
 
+Run the random forest tuning search:
+
+```powershell
+.venv\Scripts\python.exe -m src.housing.tuning
+```
+
+This samples a small set of hyperparameters on the training set and compares
+the tuned model with the default on the holdout set.
+
 Run the residual analysis:
 
 ```powershell
@@ -199,13 +214,25 @@ and saves the model, its metadata, and the comparison tables with joblib. The
 compressed file is about 40 MB and is ignored by Git, so generate it after a
 fresh clone. Loading is handled by `src/housing/finalize.py`.
 
+## Hyperparameter tuning
+
+A small randomized search improved the random forest settings to:
+
+```text
+max_depth=30, max_features=0.5, min_samples_leaf=1
+```
+
+On the same five folds, mean MAE fell from **0.3351** to **0.3309**, and every
+fold improved. Holdout MAE fell from **0.3306** to **0.3271**. Full details are
+in [`reports/tuning_results.md`](./reports/tuning_results.md).
+
 ## Model comparison and residual analysis
 
 ### Cross-validation on the training set
 
 | Model | MAE | RMSE | R² |
 |---|---:|---:|---:|
-| Random forest | 0.335 | 0.511 | 0.805 |
+| Random forest (tuned) | 0.331 | 0.502 | 0.812 |
 | Ridge | 0.529 | 0.721 | 0.611 |
 | Linear regression | 0.529 | 0.721 | 0.611 |
 | Dummy mean | 0.914 | 1.156 | 0.000 |
@@ -214,19 +241,19 @@ fresh clone. Loading is handled by `src/housing/finalize.py`.
 
 | Model | MAE | RMSE | R² | MAE ($) |
 |---|---:|---:|---:|---:|
-| Random forest | 0.331 | 0.508 | 0.803 | 33,057 |
+| Random forest (tuned) | 0.327 | 0.502 | 0.808 | 32,710 |
 | Ridge | 0.573 | 0.803 | 0.508 | 57,325 |
 | Linear regression | 0.573 | 0.803 | 0.508 | 57,329 |
 | Dummy mean | 0.906 | 1.145 | 0.000 | 90,607 |
 
 The random forest is clearly the best model. Its holdout MAE is about
-**$33,000**, and it explains about **80%** of the variance.
+**$32,700**, and it explains about **81%** of the variance.
 
 Residual checks for the random forest:
 
-- mean residual: **-0.019** (slightly over-predicting on average)
-- underprediction rate: **41.7%**
-- MAE at the target cap: **0.731** vs **0.312** below the cap
+- mean residual: **-0.015** (slightly over-predicting on average)
+- underprediction rate: **41.1%**
+- MAE at the target cap: **0.757** vs **0.307** below the cap
 
 The much larger error at the cap is expected: many different high values all
 appear as `5.0`, so the model cannot separate them. Full details and caveats
@@ -238,7 +265,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 29 tests currently pass locally, and the same suite runs on every push and
+All 30 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -258,8 +285,10 @@ The badge at the top of this README shows the latest result.
 - Environment: pinned versions in `requirements.txt` (Python 3.12).
 - Split: 80/20 train/test, `random_state=42`.
 - Cross-validation: 5 shuffled folds, `random_state=42`.
-- Models: dummy mean baseline, linear regression, ridge, and random forest
-  (100 trees).
+- Models: dummy mean baseline, linear regression, ridge, and a tuned random
+  forest (100 trees, `max_depth=30`, `max_features=0.5`,
+  `min_samples_leaf=1`).
+- Tuning: 6 sampled candidates, 3-fold CV on the training set only.
 - Metrics: MAE, RMSE, and R² in target units, plus MAE/RMSE in dollars.
 - Residuals: mean/median error, underprediction rate, and cap-vs-uncapped MAE.
 - Dashboard: reuses the training workflow, caches results, and fits the
@@ -271,7 +300,7 @@ The badge at the top of this README shows the latest result.
 
 1. **Target ceiling.** Values at 5.0 are censored at the $500k census cap, so
    high-value districts are harder to predict. The random forest's MAE is
-   about 0.731 on capped rows versus 0.312 on the rest.
+   about 0.757 on capped rows versus 0.307 on the rest.
 2. **Geographic leakage.** Rows are geographically clustered, so a random
    train/test split places neighbouring blocks in both folds. Reported scores
    describe prediction *within* California, not in an unseen region.

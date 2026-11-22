@@ -39,8 +39,12 @@ def build_models():
             ]
         ),
         # Random forest can learn non-linear relationships.
+        # These settings came from the tuning workflow in tuning.py.
         "random_forest": RandomForestRegressor(
             n_estimators=100,
+            max_depth=30,
+            max_features=0.5,
+            min_samples_leaf=1,
             random_state=RANDOM_STATE,
         ),
     }
