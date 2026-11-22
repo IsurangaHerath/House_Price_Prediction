@@ -84,5 +84,6 @@ forest was already a strong baseline for this dataset.
 - The search space was deliberately small to keep the run fast.
 - A wider search or repeated cross-validation could find slightly better
   settings, but the returns are likely small.
-- The holdout set still contains all 207 imputed `AveBedrms` rows and the
-  geographic leakage described in [`baseline_results.md`](./baseline_results.md).
+- The holdout set still contains all 207 rows with missing `AveBedrms`
+  values, which the pipeline imputes, plus the geographic leakage described
+  in [`baseline_results.md`](./baseline_results.md).

@@ -21,14 +21,16 @@ applications.
 | Baseline and regression models | Complete, tested |
 | Model comparison and residual analysis | Complete, tested |
 | Hyperparameter tuning | Complete, tested |
+| Pipeline-based imputation | Complete, tested |
+| Split-seed robustness | Complete, tested |
 | Streamlit dashboard | Complete |
 | Saved model artifact | Complete, tested |
 | Continuous integration | Configured |
 
-The training, tuning, and analysis workflows are reproducible with
-`python -m src.housing.train`, `python -m src.housing.tuning`, and
-`python -m src.housing.analyze`. The dashboard runs with
-`streamlit run app.py`. Measured results are stored in
+The training, tuning, robustness, and analysis workflows are reproducible with
+`python -m src.housing.train`, `python -m src.housing.tuning`,
+`python -m src.housing.robustness`, and `python -m src.housing.analyze`. The
+dashboard runs with `streamlit run app.py`. Measured results are stored in
 [`reports/baseline_results.md`](./reports/baseline_results.md) and
 [`reports/tuning_results.md`](./reports/tuning_results.md).
 
@@ -228,6 +230,17 @@ On the same five folds, mean MAE fell from **0.3351** to **0.3309**, and every
 fold improved. Holdout MAE fell from **0.3289** to **0.3252**. Full details are
 in [`reports/tuning_results.md`](./reports/tuning_results.md).
 
+## Data quality checks
+
+Missing bedrooms are kept as `NaN` by the loader. Every model is a pipeline
+whose first step, `BedroomImputer`, learns the median bedroom-to-room share
+from the training rows and fills the gaps there. This avoids using test data
+and replaces the earlier fixed fill.
+
+`python -m src.housing.robustness` refits the tuned forest on five different
+80/20 splits. Holdout MAE is **0.3222 ± 0.0052**, so the project's seed is not
+a lucky outlier.
+
 ## Model comparison and residual analysis
 
 ### Cross-validation on the training set
@@ -291,6 +304,9 @@ The badge at the top of this README shows the latest result.
   forest (100 trees, `max_depth=30`, `max_features=0.5`,
   `min_samples_leaf=1`).
 - Tuning: 6 sampled candidates, 3-fold CV on the training set only.
+- Imputation: missing bedrooms are filled inside each model pipeline using
+  the training rows' median bedroom share.
+- Robustness: holdout MAE is checked across five random split seeds.
 - Metrics: MAE, RMSE, and R² in target units, plus MAE/RMSE in dollars.
 - Residuals: mean/median error, underprediction rate, and cap-vs-uncapped MAE.
 - Dashboard: reuses the training workflow, caches results, and fits the
