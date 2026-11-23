@@ -27,6 +27,7 @@ applications.
 | Model explainability | Complete, tested |
 | Prediction uncertainty | Complete, tested |
 | Conformal calibration | Complete, tested |
+| Subgroup error analysis | Complete, tested |
 | Model card | Complete |
 | Streamlit dashboard | Complete |
 | Saved model artifact | Complete, tested |
@@ -64,6 +65,7 @@ house-price-prediction-ml/
 │   ├── explainability.md      # importance and partial dependence
 │   ├── uncertainty.md         # forest range and coverage
 │   ├── conformal.md           # calibrated range comparison
+│   ├── error_analysis.md      # errors by income, age, occupancy, latitude
 │   ├── model_card.md          # intended use, metrics, and limits
 │   └── feature_importance.csv # permutation importance values
 ├── notebooks/
@@ -87,7 +89,8 @@ house-price-prediction-ml/
 │       ├── explain.py         # permutation importance and dependence
 │       ├── uncertainty.py     # prediction range from the forest's trees
 │       ├── conformal.py       # calibrated range comparison
-│       └── batch.py           # score a CSV with the saved model
+│       ├── batch.py           # score a CSV with the saved model
+│       └── segments.py        # errors across feature groups
 └── tests/
     ├── test_data.py
     ├── test_features.py
@@ -103,7 +106,8 @@ house-price-prediction-ml/
     ├── test_explain.py
     ├── test_uncertainty.py
     ├── test_conformal.py
-    └── test_batch.py
+    ├── test_batch.py
+    └── test_segments.py
 ```
 
 ## Dataset
@@ -235,6 +239,15 @@ Run the conformal calibration check:
 
 This holds out part of the training data to calibrate an 80% interval, then
 compares it with the tree range on the same model.
+
+Run the subgroup error analysis:
+
+```powershell
+.venv\Scripts\python.exe -m src.housing.segments
+```
+
+This scores the holdout set by income, house-age, occupancy, and latitude
+bands, including the average direction of error in each group.
 
 Run the residual analysis:
 
@@ -398,6 +411,25 @@ of the capped rows because their truth sits at `$500,000` while predictions
 regress toward the mean. The tree range adapts at the cap, so the dashboard
 keeps it. Details are in [`reports/conformal.md`](./reports/conformal.md).
 
+## Subgroup errors
+
+`python -m src.housing.segments` scores the holdout set by feature bands. The
+clearest gap is income:
+
+| Segment | Rows | MAE |
+|---|---:|---:|
+| Income under $20k | 495 | 0.258 |
+| Income $20k–$35k | 1,566 | 0.275 |
+| Income $35k–$50k | 1,215 | 0.349 |
+| Income $50k+ | 852 | 0.423 |
+
+MAE rises **64%** from the lowest to the highest income band. Occupancy 1–1.9
+is the hardest small group (MAE **0.582** on 311 rows), while occupancy 3+ is
+the easiest (**0.240**). The northern latitude band is easiest (**0.239**), and
+34–35.9 is hardest (**0.354**). Bias is within about `±0.02` in most groups, so
+these differences are mostly variance, not a systematic shift. Full tables are
+in [`reports/error_analysis.md`](./reports/error_analysis.md).
+
 ## Model card
 
 [`reports/model_card.md`](./reports/model_card.md) records the model's intended
@@ -444,7 +476,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 49 tests currently pass locally, and the same suite runs on every push and
+All 52 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -479,6 +511,8 @@ The badge at the top of this README shows the latest result.
   checked against holdout coverage.
 - Calibration: split conformal with a 75/25 fitting/calibration split inside
   the training data.
+- Subgroup errors: fixed income, house-age, occupancy, and latitude bands on
+  the holdout set.
 - Metrics: MAE, RMSE, and R² in target units, plus MAE/RMSE in dollars.
 - Residuals: mean/median error, underprediction rate, and cap-vs-uncapped MAE.
 - Dashboard: reuses the training workflow, caches results, and fits the

@@ -22,4 +22,5 @@ __all__ = [
     "uncertainty",
     "conformal",
     "batch",
+    "segments",
 ]

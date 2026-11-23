@@ -105,12 +105,31 @@ with a narrower mean width of **1.024**, but it covers only **47.3%** of capped
 rows because predictions regress toward the mean while the truth stays at
 `5.0`. The dashboard keeps the tree range for that reason.
 
+### Subgroup errors
+
+Holdout MAE by income band:
+
+| Segment | Rows | MAE |
+|---|---:|---:|
+| under $20k | 495 | 0.258 |
+| $20k–$35k | 1,566 | 0.275 |
+| $35k–$50k | 1,215 | 0.349 |
+| $50k+ | 852 | 0.423 |
+
+Absolute error rises **64%** from the lowest to the highest income band.
+Occupancy 1–1.9 is the hardest small group (MAE **0.582** on 311 rows), and
+occupancy 3+ is the easiest (**0.240**). The northern latitude band is easiest
+(**0.239**), while 34–35.9 is hardest (**0.354**). Bias is within about `±0.02`
+in most groups, so the differences are mostly variance rather than a systematic
+shift.
+
 Full reports: [`baseline_results.md`](./baseline_results.md),
 [`tuning_results.md`](./tuning_results.md),
 [`spatial_validation.md`](./spatial_validation.md),
 [`explainability.md`](./explainability.md),
-[`uncertainty.md`](./uncertainty.md), and
-[`conformal.md`](./conformal.md).
+[`uncertainty.md`](./uncertainty.md),
+[`conformal.md`](./conformal.md), and
+[`error_analysis.md`](./error_analysis.md).
 
 ## Explainability
 
@@ -144,7 +163,10 @@ associations, not causal effects.
    distinguish high-value districts above the cap.
 5. **Imputed values.** 207 `AveBedrms` entries are missing and filled inside
    the pipeline from training-row patterns.
-6. **No current market signal.** The model knows nothing about post-1990
+6. **Uneven subgroup accuracy.** Holdout MAE is 0.258 for blocks under `$20k`
+   income and 0.423 for blocks at `$50k+`, so a single overall score hides
+   where estimates are less reliable.
+7. **No current market signal.** The model knows nothing about post-1990
    prices, interest rates, renovations, or individual property condition.
 
 ## Reproducibility
@@ -157,6 +179,7 @@ associations, not causal effects.
 .venv\Scripts\python.exe -m src.housing.explain
 .venv\Scripts\python.exe -m src.housing.uncertainty
 .venv\Scripts\python.exe -m src.housing.conformal
+.venv\Scripts\python.exe -m src.housing.segments
 .venv\Scripts\python.exe -m src.housing.analyze
 .venv\Scripts\python.exe -m src.housing.finalize
 ```
