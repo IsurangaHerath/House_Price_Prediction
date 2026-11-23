@@ -30,6 +30,7 @@ applications.
 | Model card | Complete |
 | Streamlit dashboard | Complete |
 | Saved model artifact | Complete, tested |
+| Batch scoring | Complete, tested |
 | Continuous integration | Configured |
 
 The training, tuning, robustness, spatial-validation, explainability,
@@ -85,7 +86,8 @@ house-price-prediction-ml/
 │       ├── spatial.py         # scores on held-out geographic regions
 │       ├── explain.py         # permutation importance and dependence
 │       ├── uncertainty.py     # prediction range from the forest's trees
-│       └── conformal.py       # calibrated range comparison
+│       ├── conformal.py       # calibrated range comparison
+│       └── batch.py           # score a CSV with the saved model
 └── tests/
     ├── test_data.py
     ├── test_features.py
@@ -100,7 +102,8 @@ house-price-prediction-ml/
     ├── test_spatial.py
     ├── test_explain.py
     ├── test_uncertainty.py
-    └── test_conformal.py
+    ├── test_conformal.py
+    └── test_batch.py
 ```
 
 ## Dataset
@@ -276,6 +279,32 @@ and saves the model, its metadata, and the comparison tables with joblib. The
 compressed file is about 40 MB and is ignored by Git, so generate it after a
 fresh clone. Loading is handled by `src/housing/finalize.py`.
 
+## Batch scoring
+
+Score a CSV of block groups:
+
+```powershell
+.venv\Scripts\python.exe -m src.housing.batch --input data/california_housing.csv
+```
+
+The input needs the eight feature columns. Missing `AveBedrms` values are
+imputed by the pipeline; other gaps are rejected. The command loads
+`models/best_model.joblib` when it exists and trains a model otherwise.
+
+By default it writes `<input>_predictions.csv` next to the input; pass
+`--output` to choose another path. The output keeps the input columns and adds:
+
+| Column | Meaning |
+|---|---|
+| `prediction_usd` | Predicted median value in dollars |
+| `low_usd` | 10th percentile of the forest's tree predictions |
+| `high_usd` | 90th percentile of the forest's tree predictions |
+
+Scoring the committed training CSV is an in-sample demo. Use new block groups
+for real estimates, and remember that the values describe 1990. The upper bound
+can sit above `$500,000` because it comes from tree disagreement; the target
+itself is capped there.
+
 ## Hyperparameter tuning
 
 A small randomized search improved the random forest settings to:
@@ -415,7 +444,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 45 tests currently pass locally, and the same suite runs on every push and
+All 49 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -456,6 +485,8 @@ The badge at the top of this README shows the latest result.
   winning model on all rows for predictions.
 - Final model: `python -m src.housing.finalize` saves a compressed artifact
   with its metadata and comparison results.
+- Batch scoring: `python -m src.housing.batch` adds predictions and the tree
+  range to a CSV.
 
 ## Known limitations
 
