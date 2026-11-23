@@ -36,6 +36,7 @@ applications.
 | Out-of-range warnings | Complete, tested |
 | In-app reports | Complete, tested |
 | Failure case analysis | Complete, tested |
+| Geographic error map | Complete, tested |
 | Continuous integration | Configured |
 
 The training, tuning, robustness, spatial-validation, explainability,
@@ -66,6 +67,7 @@ house-price-prediction-ml/
 │   ├── baseline_results.md    # measured baseline metrics
 │   ├── tuning_results.md      # random forest tuning comparison
 │   ├── spatial_validation.md  # scores on held-out regions
+│   ├── error_map.md           # where holdout errors cluster
 │   ├── explainability.md      # importance and partial dependence
 │   ├── uncertainty.md         # forest range and coverage
 │   ├── conformal.md           # calibrated range comparison
@@ -87,7 +89,7 @@ house-price-prediction-ml/
 │       ├── models.py          # model definitions and cross-validation
 │       ├── evaluate.py        # regression metrics and residual summaries
 │       ├── train.py           # training and evaluation workflow
-│       ├── analyze.py         # residual analysis and plots
+│       ├── analyze.py         # residual analysis and error maps
 │       ├── predict.py         # dashboard prediction helpers
 │       ├── finalize.py        # train, save, and load the final model
 │       ├── tuning.py          # random forest hyperparameter search
@@ -289,7 +291,7 @@ Run the residual analysis:
 ```
 
 This trains the same models, summarizes the best model's residuals, and saves
-residual plots to `reports/figures/`.
+residual plots and a geographic error map to `reports/figures/`.
 
 ## Dashboard
 
@@ -508,6 +510,26 @@ The full table is committed as
 interpretation is in
 [`reports/worst_predictions.md`](./reports/worst_predictions.md).
 
+## Error geography
+
+`python -m src.housing.analyze` also saves a map of holdout blocks shaded by
+absolute error:
+
+| Latitude band | Rows | MAE |
+|---|---:|---:|
+| 34 or less | 1,288 | 0.324 |
+| 34–35 | 1,011 | **0.361** |
+| 35–36 | 99 | 0.306 |
+| 36–37 | 254 | 0.297 |
+| Above 37 | 1,476 | 0.307 |
+
+The 34–35 band is about **11%** harder than the overall holdout MAE, and the
+-120 to -118 longitude band is the hardest east–west slice (MAE **0.344**).
+The largest 10% of errors spread across almost the whole populated range of the
+dataset, so there is no single geographic blind spot. Details are in
+[`reports/error_map.md`](./reports/error_map.md). The figure itself is
+regenerated into `reports/figures/` rather than committed.
+
 ## Model card
 
 [`reports/model_card.md`](./reports/model_card.md) records the model's intended
@@ -554,7 +576,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 64 tests currently pass locally, and the same suite runs on every push and
+All 65 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -596,6 +618,8 @@ The badge at the top of this README shows the latest result.
 - Input guards: dashboard and batch scoring flag features outside the 1st–99th
   percentile training bounds.
 - Failure cases: the 20 largest holdout errors are saved for inspection.
+- Error map: holdout blocks are shaded by absolute error, with colours
+  saturated at the 95th percentile.
 - Metrics: MAE, RMSE, and R² in target units, plus MAE/RMSE in dollars.
 - Residuals: mean/median error, underprediction rate, and cap-vs-uncapped MAE.
 - Dashboard: reuses the training workflow, caches results, and fits the

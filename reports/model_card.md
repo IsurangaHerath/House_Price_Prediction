@@ -140,6 +140,7 @@ values are the least reliable predictions.
 Full reports: [`baseline_results.md`](./baseline_results.md),
 [`tuning_results.md`](./tuning_results.md),
 [`spatial_validation.md`](./spatial_validation.md),
+[`error_map.md`](./error_map.md),
 [`explainability.md`](./explainability.md),
 [`uncertainty.md`](./uncertainty.md),
 [`conformal.md`](./conformal.md),

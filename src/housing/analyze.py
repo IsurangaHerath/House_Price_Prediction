@@ -55,6 +55,41 @@ def save_residual_plots(y_true, y_pred, output_dir=FIGURE_DIR):
     return [hist_path, scatter_path]
 
 
+def save_error_map(X, y_true, y_pred, output_dir=FIGURE_DIR):
+    """Save a map of holdout blocks shaded by absolute error."""
+    abs_error = np.abs(np.asarray(y_true) - np.asarray(y_pred))
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Saturate at the 95th percentile so a few huge errors do not flatten the
+    # colours for the rest of the map.
+    vmax = np.percentile(abs_error, 95)
+
+    plt.figure(figsize=(8, 6))
+    points = plt.scatter(
+        X["Longitude"],
+        X["Latitude"],
+        c=abs_error,
+        cmap="viridis",
+        s=8,
+        alpha=0.6,
+        vmin=0,
+        vmax=vmax,
+    )
+    plt.colorbar(points, label="Absolute error")
+    plt.xlabel("Longitude")
+    plt.ylabel("Latitude")
+    plt.title("Holdout errors by location (colors capped at 95th percentile)")
+    plt.tight_layout()
+
+    path = output_dir / "error_map.png"
+    plt.savefig(path, dpi=150)
+    plt.close()
+
+    return path
+
+
 def main():
     """Run the workflow and summarize the best model's residuals."""
     results = train_and_evaluate()
@@ -79,6 +114,19 @@ def main():
 
     print()
     paths = save_residual_plots(y_true, y_pred)
+    paths.append(save_error_map(results["X_test"], y_true, y_pred))
+
+    # Show where the largest errors sit without needing the figure.
+    locations = results["X_test"][["Latitude", "Longitude"]].copy()
+    locations["abs_error"] = np.abs(np.asarray(y_true) - np.asarray(y_pred))
+    top = locations.nlargest(int(len(locations) * 0.1), "abs_error")
+
+    print()
+    print("Locations of the largest 10% of errors:")
+    print(f"  latitude: {top['Latitude'].min():.2f} to {top['Latitude'].max():.2f}")
+    print(f"  longitude: {top['Longitude'].min():.2f} to {top['Longitude'].max():.2f}")
+
+    print()
     print("Saved plots:")
     for path in paths:
         print(f"  {path}")

@@ -10,6 +10,7 @@ AVAILABLE_REPORTS = (
     "baseline_results.md",
     "tuning_results.md",
     "spatial_validation.md",
+    "error_map.md",
     "explainability.md",
     "uncertainty.md",
     "conformal.md",

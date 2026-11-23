@@ -22,6 +22,7 @@ def test_train_and_evaluate_returns_comparison():
 
     assert results["n_train"] == 400
     assert results["n_test"] == 100
+    assert len(results["X_test"]) == 100
     assert len(results["cv_results"]) == 4
     assert len(results["test_results"]) == 4
 

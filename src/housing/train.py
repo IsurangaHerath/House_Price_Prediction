@@ -63,6 +63,7 @@ def train_and_evaluate(df=None, validate=True):
         "cv_results": cv_results,
         "test_results": test_results,
         "test_predictions": test_predictions,
+        "X_test": X_test,
         "y_test": y_test,
         "best_model": best_model,
         "n_train": len(X_train),
