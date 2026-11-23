@@ -19,6 +19,7 @@ from src.housing.predict import (
     format_usd,
     predict_house_value,
 )
+from src.housing.reports import AVAILABLE_REPORTS, load_report
 from src.housing.train import train_and_evaluate
 from src.housing.uncertainty import prediction_interval
 
@@ -276,6 +277,21 @@ def render_data_tab(df):
     st.dataframe(df[EXPECTED_FEATURES + [TARGET_COLUMN]].describe().T.round(3))
 
 
+def render_reports_tab():
+    """Show the committed project reports inside the app."""
+    st.subheader("Project reports")
+    name = st.selectbox("Report", AVAILABLE_REPORTS, index=0)
+
+    text = load_report(name)
+    if text is None:
+        st.info("This report is not available in the current checkout.")
+        return
+
+    # Escape dollar signs so Streamlit does not read them as LaTeX.
+    st.markdown(text.replace("$", "\\$"))
+    st.caption("Links inside reports point to files in the repository.")
+
+
 def main():
     """Build the dashboard."""
     st.set_page_config(
@@ -293,8 +309,8 @@ def main():
     df = get_data()
     results = get_results()
 
-    predict_tab, models_tab, data_tab = st.tabs(
-        ["Predict", "Model comparison", "Data overview"]
+    predict_tab, models_tab, data_tab, reports_tab = st.tabs(
+        ["Predict", "Model comparison", "Data overview", "Reports"]
     )
 
     with predict_tab:
@@ -305,6 +321,9 @@ def main():
 
     with data_tab:
         render_data_tab(df)
+
+    with reports_tab:
+        render_reports_tab()
 
 
 if __name__ == "__main__":

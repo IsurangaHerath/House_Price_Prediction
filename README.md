@@ -34,6 +34,7 @@ applications.
 | Saved model artifact | Complete, tested |
 | Batch scoring | Complete, tested |
 | Out-of-range warnings | Complete, tested |
+| In-app reports | Complete, tested |
 | Continuous integration | Configured |
 
 The training, tuning, robustness, spatial-validation, explainability,
@@ -95,7 +96,8 @@ house-price-prediction-ml/
 │       ├── batch.py           # score a CSV with the saved model
 │       ├── segments.py        # errors across feature groups
 │       ├── learning_curve.py  # error as the training set grows
-│       └── bounds.py          # flag inputs outside the training range
+│       ├── bounds.py          # flag inputs outside the training range
+│       └── reports.py         # load committed reports for the dashboard
 └── tests/
     ├── test_data.py
     ├── test_features.py
@@ -114,7 +116,8 @@ house-price-prediction-ml/
     ├── test_batch.py
     ├── test_segments.py
     ├── test_learning_curve.py
-    └── test_bounds.py
+    ├── test_bounds.py
+    └── test_reports.py
 ```
 
 ## Dataset
@@ -282,7 +285,7 @@ Start the Streamlit app:
 .venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-The dashboard has three tabs:
+The dashboard has four tabs:
 
 - **Predict** — enter block-group features and get an estimated median house
   value in dollars, plus a likely range from the forest's trees. Inputs outside
@@ -290,6 +293,8 @@ The dashboard has three tabs:
 - **Model comparison** — cross-validation and holdout scores for all four
   models.
 - **Data overview** — dataset summary and the target distribution.
+- **Reports** — read the committed model card and validation reports without
+  leaving the app.
 
 The app loads `models/best_model.joblib` when it exists, including the saved
 comparison results, so startup takes about 10 seconds instead of retraining for
@@ -518,7 +523,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 58 tests currently pass locally, and the same suite runs on every push and
+All 61 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
