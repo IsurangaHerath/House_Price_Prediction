@@ -123,13 +123,21 @@ occupancy 3+ is the easiest (**0.240**). The northern latitude band is easiest
 in most groups, so the differences are mostly variance rather than a systematic
 shift.
 
+### Data sufficiency
+
+A learning curve on the training split drops validation MAE from **0.389** at
+2,641 rows to **0.330** at 13,209 rows. The curve is still falling, so more
+data would help modestly. Training MAE stays near **0.123**, leaving a gap of
+about **0.21** against validation error.
+
 Full reports: [`baseline_results.md`](./baseline_results.md),
 [`tuning_results.md`](./tuning_results.md),
 [`spatial_validation.md`](./spatial_validation.md),
 [`explainability.md`](./explainability.md),
 [`uncertainty.md`](./uncertainty.md),
-[`conformal.md`](./conformal.md), and
-[`error_analysis.md`](./error_analysis.md).
+[`conformal.md`](./conformal.md),
+[`error_analysis.md`](./error_analysis.md), and
+[`learning_curve.md`](./learning_curve.md).
 
 ## Explainability
 
@@ -180,6 +188,7 @@ associations, not causal effects.
 .venv\Scripts\python.exe -m src.housing.uncertainty
 .venv\Scripts\python.exe -m src.housing.conformal
 .venv\Scripts\python.exe -m src.housing.segments
+.venv\Scripts\python.exe -m src.housing.learning_curve
 .venv\Scripts\python.exe -m src.housing.analyze
 .venv\Scripts\python.exe -m src.housing.finalize
 ```

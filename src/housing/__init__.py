@@ -23,4 +23,5 @@ __all__ = [
     "conformal",
     "batch",
     "segments",
+    "learning_curve",
 ]

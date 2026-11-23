@@ -28,6 +28,7 @@ applications.
 | Prediction uncertainty | Complete, tested |
 | Conformal calibration | Complete, tested |
 | Subgroup error analysis | Complete, tested |
+| Learning curve | Complete, tested |
 | Model card | Complete |
 | Streamlit dashboard | Complete |
 | Saved model artifact | Complete, tested |
@@ -66,6 +67,7 @@ house-price-prediction-ml/
 │   ├── uncertainty.md         # forest range and coverage
 │   ├── conformal.md           # calibrated range comparison
 │   ├── error_analysis.md      # errors by income, age, occupancy, latitude
+│   ├── learning_curve.md      # error as the training set grows
 │   ├── model_card.md          # intended use, metrics, and limits
 │   └── feature_importance.csv # permutation importance values
 ├── notebooks/
@@ -90,7 +92,8 @@ house-price-prediction-ml/
 │       ├── uncertainty.py     # prediction range from the forest's trees
 │       ├── conformal.py       # calibrated range comparison
 │       ├── batch.py           # score a CSV with the saved model
-│       └── segments.py        # errors across feature groups
+│       ├── segments.py        # errors across feature groups
+│       └── learning_curve.py  # error as the training set grows
 └── tests/
     ├── test_data.py
     ├── test_features.py
@@ -107,7 +110,8 @@ house-price-prediction-ml/
     ├── test_uncertainty.py
     ├── test_conformal.py
     ├── test_batch.py
-    └── test_segments.py
+    ├── test_segments.py
+    └── test_learning_curve.py
 ```
 
 ## Dataset
@@ -248,6 +252,15 @@ Run the subgroup error analysis:
 
 This scores the holdout set by income, house-age, occupancy, and latitude
 bands, including the average direction of error in each group.
+
+Run the learning curve:
+
+```powershell
+.venv\Scripts\python.exe -m src.housing.learning_curve
+```
+
+This trains the forest at five growing sizes on the training split and saves
+the curve plot, showing whether more data would help.
 
 Run the residual analysis:
 
@@ -430,6 +443,25 @@ the easiest (**0.240**). The northern latitude band is easiest (**0.239**), and
 these differences are mostly variance, not a systematic shift. Full tables are
 in [`reports/error_analysis.md`](./reports/error_analysis.md).
 
+## Learning curve
+
+`python -m src.housing.learning_curve` trains the forest at five growing sizes
+on the training split:
+
+| Training rows | Train MAE | Validation MAE |
+|---:|---:|---:|
+| 2,641 | 0.141 | 0.389 |
+| 5,283 | 0.132 | 0.360 |
+| 7,925 | 0.127 | 0.346 |
+| 10,567 | 0.125 | 0.337 |
+| 13,209 | 0.123 | 0.330 |
+
+Validation MAE falls about **15%** across the curve and is still dropping at the
+largest size, so more data would help modestly. The train/validation gap of
+about **0.21** shows the forest fits its training rows far better than it
+generalizes. Details are in
+[`reports/learning_curve.md`](./reports/learning_curve.md).
+
 ## Model card
 
 [`reports/model_card.md`](./reports/model_card.md) records the model's intended
@@ -476,7 +508,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 52 tests currently pass locally, and the same suite runs on every push and
+All 54 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -513,6 +545,8 @@ The badge at the top of this README shows the latest result.
   the training data.
 - Subgroup errors: fixed income, house-age, occupancy, and latitude bands on
   the holdout set.
+- Learning curve: five training sizes with three 80/20 shuffle splits on the
+  training data.
 - Metrics: MAE, RMSE, and R² in target units, plus MAE/RMSE in dollars.
 - Residuals: mean/median error, underprediction rate, and cap-vs-uncapped MAE.
 - Dashboard: reuses the training workflow, caches results, and fits the
