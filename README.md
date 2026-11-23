@@ -35,6 +35,7 @@ applications.
 | Batch scoring | Complete, tested |
 | Out-of-range warnings | Complete, tested |
 | In-app reports | Complete, tested |
+| Failure case analysis | Complete, tested |
 | Continuous integration | Configured |
 
 The training, tuning, robustness, spatial-validation, explainability,
@@ -70,6 +71,8 @@ house-price-prediction-ml/
 │   ├── conformal.md           # calibrated range comparison
 │   ├── error_analysis.md      # errors by income, age, occupancy, latitude
 │   ├── learning_curve.md      # error as the training set grows
+│   ├── worst_predictions.md   # inspection of the largest errors
+│   ├── worst_predictions.csv  # the 20 worst holdout rows
 │   ├── model_card.md          # intended use, metrics, and limits
 │   └── feature_importance.csv # permutation importance values
 ├── notebooks/
@@ -97,7 +100,8 @@ house-price-prediction-ml/
 │       ├── segments.py        # errors across feature groups
 │       ├── learning_curve.py  # error as the training set grows
 │       ├── bounds.py          # flag inputs outside the training range
-│       └── reports.py         # load committed reports for the dashboard
+│       ├── reports.py         # load committed reports for the dashboard
+│       └── failures.py        # save the worst holdout predictions
 └── tests/
     ├── test_data.py
     ├── test_features.py
@@ -117,7 +121,8 @@ house-price-prediction-ml/
     ├── test_segments.py
     ├── test_learning_curve.py
     ├── test_bounds.py
-    └── test_reports.py
+    ├── test_reports.py
+    └── test_failures.py
 ```
 
 ## Dataset
@@ -267,6 +272,15 @@ Run the learning curve:
 
 This trains the forest at five growing sizes on the training split and saves
 the curve plot, showing whether more data would help.
+
+Run the failure-case analysis:
+
+```powershell
+.venv\Scripts\python.exe -m src.housing.failures
+```
+
+This saves the 20 holdout rows with the largest absolute error and summarizes
+what they have in common.
 
 Run the residual analysis:
 
@@ -477,6 +491,23 @@ about **0.21** shows the forest fits its training rows far better than it
 generalizes. Details are in
 [`reports/learning_curve.md`](./reports/learning_curve.md).
 
+## Worst predictions
+
+`python -m src.housing.failures` saves the 20 largest holdout errors. Their mean
+absolute error is **2.641** (`$264,080`), about **8 times** the overall MAE.
+
+- **14 of 20** are capped rows, all under-predicted by `$231,000`–`$330,000`.
+- The four over-predictions are blocks with true values at or below **1.25**
+  that look ordinary in the features.
+- **6 of 20** have fewer than 200 residents, versus **2.4%** of all blocks, so
+  tiny block groups are about **12 times** overrepresented among the worst
+  errors.
+
+The full table is committed as
+[`reports/worst_predictions.csv`](./reports/worst_predictions.csv), and the
+interpretation is in
+[`reports/worst_predictions.md`](./reports/worst_predictions.md).
+
 ## Model card
 
 [`reports/model_card.md`](./reports/model_card.md) records the model's intended
@@ -523,7 +554,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 61 tests currently pass locally, and the same suite runs on every push and
+All 64 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -564,6 +595,7 @@ The badge at the top of this README shows the latest result.
   training data.
 - Input guards: dashboard and batch scoring flag features outside the 1st–99th
   percentile training bounds.
+- Failure cases: the 20 largest holdout errors are saved for inspection.
 - Metrics: MAE, RMSE, and R² in target units, plus MAE/RMSE in dollars.
 - Residuals: mean/median error, underprediction rate, and cap-vs-uncapped MAE.
 - Dashboard: reuses the training workflow, caches results, and fits the

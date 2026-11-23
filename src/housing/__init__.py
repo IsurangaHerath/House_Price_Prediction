@@ -26,4 +26,5 @@ __all__ = [
     "learning_curve",
     "bounds",
     "reports",
+    "failures",
 ]

@@ -130,14 +130,22 @@ A learning curve on the training split drops validation MAE from **0.389** at
 data would help modestly. Training MAE stays near **0.123**, leaving a gap of
 about **0.21** against validation error.
 
+### Failure cases
+
+The 20 worst holdout predictions have a mean absolute error of **2.641**
+(`$264,080`). 14 are capped rows, and 6 have fewer than 200 residents even
+though only **2.4%** of all blocks are that small. Tiny block groups and capped
+values are the least reliable predictions.
+
 Full reports: [`baseline_results.md`](./baseline_results.md),
 [`tuning_results.md`](./tuning_results.md),
 [`spatial_validation.md`](./spatial_validation.md),
 [`explainability.md`](./explainability.md),
 [`uncertainty.md`](./uncertainty.md),
 [`conformal.md`](./conformal.md),
-[`error_analysis.md`](./error_analysis.md), and
-[`learning_curve.md`](./learning_curve.md).
+[`error_analysis.md`](./error_analysis.md),
+[`learning_curve.md`](./learning_curve.md), and
+[`worst_predictions.md`](./worst_predictions.md).
 
 ## Explainability
 
@@ -196,6 +204,7 @@ Flagged rows are still scored; the warning is a caution, not a rejection.
 .venv\Scripts\python.exe -m src.housing.conformal
 .venv\Scripts\python.exe -m src.housing.segments
 .venv\Scripts\python.exe -m src.housing.learning_curve
+.venv\Scripts\python.exe -m src.housing.failures
 .venv\Scripts\python.exe -m src.housing.analyze
 .venv\Scripts\python.exe -m src.housing.finalize
 ```

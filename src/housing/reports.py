@@ -15,6 +15,7 @@ AVAILABLE_REPORTS = (
     "conformal.md",
     "error_analysis.md",
     "learning_curve.md",
+    "worst_predictions.md",
 )
 
 
