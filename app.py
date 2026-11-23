@@ -19,7 +19,7 @@ from src.housing.predict import (
     format_usd,
     predict_house_value,
 )
-from src.housing.reports import AVAILABLE_REPORTS, load_report
+from src.housing.reports import AVAILABLE_REPORTS, load_report, typical_segment_error
 from src.housing.train import train_and_evaluate
 from src.housing.uncertainty import prediction_interval
 
@@ -181,6 +181,13 @@ def render_predict_tab(df, results):
         f"{format_usd(interval['high'] * TARGET_UNIT_USD)}** "
         "(10th to 90th percentile across the forest's trees)."
     )
+
+    band, typical_mae = typical_segment_error("Income", med_inc)
+    if typical_mae is not None:
+        st.caption(
+            f"Income band **{band}**: typical holdout error "
+            f"**{format_usd(typical_mae * TARGET_UNIT_USD)}**."
+        )
 
     flagged = outside_mask(features, get_bounds()).iloc[0]
     unusual = list(flagged.index[flagged])

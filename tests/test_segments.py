@@ -49,3 +49,17 @@ def test_segment_errors_skips_empty_groups():
     table = hseg.segment_errors(y_true, y_pred, groups)
 
     assert list(table["segment"]) == ["a"]
+
+
+def test_save_segment_errors(tmp_path):
+    tables = {
+        "Income": pd.DataFrame({"segment": ["under $20k"], "mae": [0.25]}),
+        "Occupancy": pd.DataFrame({"segment": ["3+"], "mae": [0.40]}),
+    }
+    path = tmp_path / "segment_errors.csv"
+
+    saved = hseg.save_segment_errors(tables, path)
+
+    assert path.exists()
+    assert saved["segment_type"].tolist() == ["Income", "Occupancy"]
+    assert saved["mae"].tolist() == pytest.approx([0.25, 0.40])

@@ -37,6 +37,7 @@ applications.
 | In-app reports | Complete, tested |
 | Failure case analysis | Complete, tested |
 | Geographic error map | Complete, tested |
+| Prediction error context | Complete, tested |
 | Continuous integration | Configured |
 
 The training, tuning, robustness, spatial-validation, explainability,
@@ -72,6 +73,7 @@ house-price-prediction-ml/
 │   ├── uncertainty.md         # forest range and coverage
 │   ├── conformal.md           # calibrated range comparison
 │   ├── error_analysis.md      # errors by income, age, occupancy, latitude
+│   ├── segment_errors.csv     # saved band-by-band holdout errors
 │   ├── learning_curve.md      # error as the training set grows
 │   ├── worst_predictions.md   # inspection of the largest errors
 │   ├── worst_predictions.csv  # the 20 worst holdout rows
@@ -99,7 +101,7 @@ house-price-prediction-ml/
 │       ├── uncertainty.py     # prediction range from the forest's trees
 │       ├── conformal.py       # calibrated range comparison
 │       ├── batch.py           # score a CSV with the saved model
-│       ├── segments.py        # errors across feature groups
+│       ├── segments.py        # errors across feature groups, saved as CSV
 │       ├── learning_curve.py  # error as the training set grows
 │       ├── bounds.py          # flag inputs outside the training range
 │       ├── reports.py         # load committed reports for the dashboard
@@ -304,8 +306,9 @@ Start the Streamlit app:
 The dashboard has four tabs:
 
 - **Predict** — enter block-group features and get an estimated median house
-  value in dollars, plus a likely range from the forest's trees. Inputs outside
-  the 1st–99th percentile training range trigger a warning.
+  value in dollars, a likely range from the forest's trees, and the typical
+  holdout error for that income band. Inputs outside the 1st–99th percentile
+  training range trigger a warning.
 - **Model comparison** — cross-validation and holdout scores for all four
   models.
 - **Data overview** — dataset summary and the target distribution.
@@ -472,7 +475,10 @@ is the hardest small group (MAE **0.582** on 311 rows), while occupancy 3+ is
 the easiest (**0.240**). The northern latitude band is easiest (**0.239**), and
 34–35.9 is hardest (**0.354**). Bias is within about `±0.02` in most groups, so
 these differences are mostly variance, not a systematic shift. Full tables are
-in [`reports/error_analysis.md`](./reports/error_analysis.md).
+in [`reports/error_analysis.md`](./reports/error_analysis.md), and the same
+numbers are saved as [`reports/segment_errors.csv`](./reports/segment_errors.csv).
+The dashboard uses that table to show the typical error for the income band of
+each prediction.
 
 ## Learning curve
 
@@ -576,7 +582,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 65 tests currently pass locally, and the same suite runs on every push and
+All 69 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -612,7 +618,7 @@ The badge at the top of this README shows the latest result.
 - Calibration: split conformal with a 75/25 fitting/calibration split inside
   the training data.
 - Subgroup errors: fixed income, house-age, occupancy, and latitude bands on
-  the holdout set.
+  the holdout set, saved as `reports/segment_errors.csv` for the dashboard.
 - Learning curve: five training sizes with three 80/20 shuffle splits on the
   training data.
 - Input guards: dashboard and batch scoring flag features outside the 1st–99th

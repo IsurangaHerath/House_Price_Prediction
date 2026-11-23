@@ -121,7 +121,9 @@ Occupancy 1–1.9 is the hardest small group (MAE **0.582** on 311 rows), and
 occupancy 3+ is the easiest (**0.240**). The northern latitude band is easiest
 (**0.239**), while 34–35.9 is hardest (**0.354**). Bias is within about `±0.02`
 in most groups, so the differences are mostly variance rather than a systematic
-shift.
+shift. The band-by-band errors are saved as
+[`segment_errors.csv`](./segment_errors.csv), and the dashboard uses them to
+show the typical holdout error for the entered income band.
 
 ### Data sufficiency
 

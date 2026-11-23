@@ -1,5 +1,7 @@
 """Measure prediction errors across groups of block groups."""
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -7,6 +9,8 @@ from .data import load_dataset, validate_frame
 from .evaluate import regression_metrics
 from .models import build_models
 from .train import split_train_test
+
+SEGMENT_CSV = Path("reports/segment_errors.csv")
 
 # Each segment is a column, its edges, and readable labels.
 SEGMENTS = {
@@ -61,6 +65,21 @@ def segment_errors(y_true, y_pred, segments):
     return pd.DataFrame(rows)
 
 
+def save_segment_errors(tables, path=SEGMENT_CSV):
+    """Save all segment tables as one CSV with a segment_type column."""
+    frames = []
+    for title, table in tables.items():
+        frame = table.copy()
+        frame.insert(0, "segment_type", title)
+        frames.append(frame)
+
+    combined = pd.concat(frames, ignore_index=True)
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    combined.to_csv(path, index=False)
+    return combined
+
+
 def main():
     """Score the tuned forest on holdout subgroups."""
     df = load_dataset()
@@ -80,6 +99,7 @@ def main():
         f"R2: {overall['r2']:.4f}"
     )
 
+    tables = {}
     for title, spec in SEGMENTS.items():
         segments = add_segment(
             X_test,
@@ -88,6 +108,7 @@ def main():
             spec["labels"],
         )
         table = segment_errors(y_test, predictions, segments)
+        tables[title] = table
 
         print()
         print(f"{title}:")
@@ -95,6 +116,10 @@ def main():
             table[["segment", "n_samples", "mae", "rmse", "r2", "bias"]]
             .to_string(index=False, float_format=lambda value: f"{value:.4f}")
         )
+
+    save_segment_errors(tables)
+    print()
+    print(f"Saved {SEGMENT_CSV}")
 
 
 if __name__ == "__main__":
