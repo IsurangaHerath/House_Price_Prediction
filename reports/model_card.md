@@ -177,6 +177,13 @@ associations, not causal effects.
 7. **No current market signal.** The model knows nothing about post-1990
    prices, interest rates, renovations, or individual property condition.
 
+## Input guards
+
+The dashboard and batch scorer compare each input with the 1st and 99th
+percentile bounds of the training data. Features outside those bounds are
+flagged because the model extrapolates poorly, especially across geography.
+Flagged rows are still scored; the warning is a caution, not a rejection.
+
 ## Reproducibility
 
 ```powershell

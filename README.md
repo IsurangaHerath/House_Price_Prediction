@@ -33,6 +33,7 @@ applications.
 | Streamlit dashboard | Complete |
 | Saved model artifact | Complete, tested |
 | Batch scoring | Complete, tested |
+| Out-of-range warnings | Complete, tested |
 | Continuous integration | Configured |
 
 The training, tuning, robustness, spatial-validation, explainability,
@@ -93,7 +94,8 @@ house-price-prediction-ml/
 │       ├── conformal.py       # calibrated range comparison
 │       ├── batch.py           # score a CSV with the saved model
 │       ├── segments.py        # errors across feature groups
-│       └── learning_curve.py  # error as the training set grows
+│       ├── learning_curve.py  # error as the training set grows
+│       └── bounds.py          # flag inputs outside the training range
 └── tests/
     ├── test_data.py
     ├── test_features.py
@@ -111,7 +113,8 @@ house-price-prediction-ml/
     ├── test_conformal.py
     ├── test_batch.py
     ├── test_segments.py
-    └── test_learning_curve.py
+    ├── test_learning_curve.py
+    └── test_bounds.py
 ```
 
 ## Dataset
@@ -282,7 +285,8 @@ Start the Streamlit app:
 The dashboard has three tabs:
 
 - **Predict** — enter block-group features and get an estimated median house
-  value in dollars, plus a likely range from the forest's trees.
+  value in dollars, plus a likely range from the forest's trees. Inputs outside
+  the 1st–99th percentile training range trigger a warning.
 - **Model comparison** — cross-validation and holdout scores for all four
   models.
 - **Data overview** — dataset summary and the target distribution.
@@ -325,6 +329,12 @@ By default it writes `<input>_predictions.csv` next to the input; pass
 | `prediction_usd` | Predicted median value in dollars |
 | `low_usd` | 10th percentile of the forest's tree predictions |
 | `high_usd` | 90th percentile of the forest's tree predictions |
+| `outside_range` | True when any feature is outside the training bounds |
+| `outside_features` | Semicolon-separated names of the out-of-range features |
+
+The bounds are the 1st and 99th percentiles of each feature in the committed
+dataset. Flagged rows are still scored, but the model extrapolates poorly
+outside the training distribution, so treat those estimates with caution.
 
 Scoring the committed training CSV is an in-sample demo. Use new block groups
 for real estimates, and remember that the values describe 1990. The upper bound
@@ -508,7 +518,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 54 tests currently pass locally, and the same suite runs on every push and
+All 58 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -547,6 +557,8 @@ The badge at the top of this README shows the latest result.
   the holdout set.
 - Learning curve: five training sizes with three 80/20 shuffle splits on the
   training data.
+- Input guards: dashboard and batch scoring flag features outside the 1st–99th
+  percentile training bounds.
 - Metrics: MAE, RMSE, and R² in target units, plus MAE/RMSE in dollars.
 - Residuals: mean/median error, underprediction rate, and cap-vs-uncapped MAE.
 - Dashboard: reuses the training workflow, caches results, and fits the

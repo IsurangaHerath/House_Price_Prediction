@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from src.housing import batch as hb
+from src.housing import bounds as hbounds
 from src.housing import data as hd
 from src.housing import features as hf
 from src.housing import models as hm
@@ -43,6 +44,27 @@ def test_score_frame_uses_the_tree_range():
     assert (scored["low_usd"] <= scored["prediction_usd"]).all()
     assert (scored["prediction_usd"] <= scored["high_usd"]).all()
     assert (scored["low_usd"] < scored["high_usd"]).all()
+
+
+def test_score_frame_flags_out_of_range_rows():
+    bounds = hbounds.training_bounds(hd.load_dataset().head(200))
+    typical = {
+        col: float((bounds.loc[col, "low"] + bounds.loc[col, "high"]) / 2)
+        for col in hd.EXPECTED_FEATURES
+    }
+    df = pd.DataFrame([typical, typical])
+
+    model = hm.build_models()["dummy_mean"]
+    model.fit(df, [2.0, 2.0])
+
+    extreme = df.copy()
+    extreme.loc[0, "MedInc"] = 1000.0
+    scored = hb.score_frame(model, extreme, bounds=bounds)
+
+    assert "outside_range" in scored.columns
+    assert scored["outside_range"].iloc[0]
+    assert "MedInc" in scored["outside_features"].iloc[0]
+    assert not scored["outside_range"].iloc[1]
 
 
 def test_validate_features_rejects_missing_columns():

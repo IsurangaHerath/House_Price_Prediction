@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
+from src.housing.bounds import outside_mask, training_bounds
 from src.housing.data import (
     EXPECTED_FEATURES,
     TARGET_COLUMN,
@@ -30,6 +31,12 @@ def get_data():
     df = load_dataset()
     validate_frame(df)
     return df
+
+
+@st.cache_data(show_spinner=False)
+def get_bounds():
+    """Percentile bounds used to flag unusual inputs."""
+    return training_bounds(get_data())
 
 
 @st.cache_resource(show_spinner="Loading the saved model...")
@@ -173,6 +180,15 @@ def render_predict_tab(df, results):
         f"{format_usd(interval['high'] * TARGET_UNIT_USD)}** "
         "(10th to 90th percentile across the forest's trees)."
     )
+
+    flagged = outside_mask(features, get_bounds()).iloc[0]
+    unusual = list(flagged.index[flagged])
+    if unusual:
+        st.warning(
+            "Outside the training range: "
+            + ", ".join(unusual)
+            + ". The estimate may be unreliable."
+        )
 
     if value >= CAP_VALUE * TARGET_UNIT_USD:
         st.info(

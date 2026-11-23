@@ -24,4 +24,5 @@ __all__ = [
     "batch",
     "segments",
     "learning_curve",
+    "bounds",
 ]

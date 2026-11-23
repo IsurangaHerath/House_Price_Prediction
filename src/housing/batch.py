@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from .data import EXPECTED_FEATURES, TARGET_UNIT_USD
+from .bounds import outside_mask, training_bounds
+from .data import EXPECTED_FEATURES, TARGET_UNIT_USD, load_dataset
 from .finalize import MODEL_PATH, load_model, train_final_model
 from .uncertainty import prediction_interval
 
@@ -26,7 +27,7 @@ def validate_features(df):
         raise ValueError(f"Missing values in: {gaps}")
 
 
-def score_frame(model, df, lower=0.10, upper=0.90):
+def score_frame(model, df, lower=0.10, upper=0.90, bounds=None):
     """Add predicted values and the tree range, in dollars."""
     validate_features(df)
 
@@ -41,6 +42,15 @@ def score_frame(model, df, lower=0.10, upper=0.90):
     scored["prediction_usd"] = intervals["prediction"].to_numpy() * TARGET_UNIT_USD
     scored["low_usd"] = intervals["low"].to_numpy() * TARGET_UNIT_USD
     scored["high_usd"] = intervals["high"].to_numpy() * TARGET_UNIT_USD
+
+    if bounds is not None:
+        mask = outside_mask(df[EXPECTED_FEATURES], bounds)
+        scored["outside_range"] = mask.any(axis=1).to_numpy()
+        scored["outside_features"] = mask.apply(
+            lambda row: ";".join(row.index[row]),
+            axis=1,
+        ).to_numpy()
+
     return scored
 
 
@@ -64,7 +74,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     df = pd.read_csv(args.input)
-    scored = score_frame(get_model(), df)
+    bounds = training_bounds(load_dataset())
+    scored = score_frame(get_model(), df, bounds=bounds)
 
     if args.output:
         output = Path(args.output)
@@ -75,7 +86,8 @@ def main(argv=None):
     output.parent.mkdir(parents=True, exist_ok=True)
     scored.to_csv(output, index=False)
 
-    print(f"Scored {len(scored):,} rows")
+    flagged = int(scored["outside_range"].sum())
+    print(f"Scored {len(scored):,} rows ({flagged:,} outside the training range)")
     print(f"Saved {output}")
     print(
         scored[["prediction_usd", "low_usd", "high_usd"]]
