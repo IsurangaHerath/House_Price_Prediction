@@ -38,13 +38,15 @@ applications.
 | Failure case analysis | Complete, tested |
 | Geographic error map | Complete, tested |
 | Prediction error context | Complete, tested |
+| Importance stability | Complete, tested |
 | Continuous integration | Configured |
 
 The training, tuning, robustness, spatial-validation, explainability,
 uncertainty, calibration, and analysis workflows are reproducible with
 `python -m src.housing.train`, `python -m src.housing.tuning`,
 `python -m src.housing.robustness`, `python -m src.housing.spatial`,
-`python -m src.housing.explain`, `python -m src.housing.uncertainty`,
+`python -m src.housing.explain`, `python -m src.housing.stability`,
+`python -m src.housing.uncertainty`,
 `python -m src.housing.conformal`, and `python -m src.housing.analyze`. The
 dashboard runs with `streamlit run app.py`. Measured results are stored in the
 [`reports/`](./reports) folder, and intended use and ethical limits are
@@ -70,6 +72,8 @@ house-price-prediction-ml/
 │   ├── spatial_validation.md  # scores on held-out regions
 │   ├── error_map.md           # where holdout errors cluster
 │   ├── explainability.md      # importance and partial dependence
+│   ├── importance_stability.md # importance across five split seeds
+│   ├── importance_stability.csv # raw per-seed importance table
 │   ├── uncertainty.md         # forest range and coverage
 │   ├── conformal.md           # calibrated range comparison
 │   ├── error_analysis.md      # errors by income, age, occupancy, latitude
@@ -98,6 +102,7 @@ house-price-prediction-ml/
 │       ├── robustness.py      # holdout score across split seeds
 │       ├── spatial.py         # scores on held-out geographic regions
 │       ├── explain.py         # permutation importance and dependence
+│       ├── stability.py       # importance across split seeds
 │       ├── uncertainty.py     # prediction range from the forest's trees
 │       ├── conformal.py       # calibrated range comparison
 │       ├── batch.py           # score a CSV with the saved model
@@ -119,6 +124,7 @@ house-price-prediction-ml/
     ├── test_robustness.py
     ├── test_spatial.py
     ├── test_explain.py
+    ├── test_stability.py
     ├── test_uncertainty.py
     ├── test_conformal.py
     ├── test_batch.py
@@ -240,6 +246,15 @@ Run the explainability analysis:
 
 This computes permutation importance and partial dependence on the holdout
 set, then saves the importance table and plots.
+
+Check whether the importance ranking survives different splits:
+
+```powershell
+.venv\Scripts\python.exe -m src.housing.stability
+```
+
+This repeats permutation importance on five independent 80/20 splits and saves
+the per-seed table.
 
 Run the uncertainty check:
 
@@ -427,6 +442,11 @@ dependence shows predicted value rising with income and falling from the coast
 toward inland areas. These are associations, not causal effects. Full details
 are in [`reports/explainability.md`](./reports/explainability.md).
 
+The ordering is unchanged across five different split seeds: all 10 pairwise
+rank correlations are **1.0**, and the four leading features account for about
+**91%** of total importance. See
+[`reports/importance_stability.md`](./reports/importance_stability.md).
+
 ## Prediction uncertainty
 
 Each tree in the forest predicts a slightly different value. The dashboard
@@ -582,7 +602,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 69 tests currently pass locally, and the same suite runs on every push and
+All 72 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -612,7 +632,7 @@ The badge at the top of this README shows the latest result.
 - Spatial validation: 10 KMeans regions are held out one at a time with
   `GroupKFold`.
 - Explainability: permutation importance and partial dependence on the holdout
-  set.
+  set; importance ranking is rechecked on five split seeds.
 - Uncertainty: the 10th to 90th percentile of the forest's tree predictions,
   checked against holdout coverage.
 - Calibration: split conformal with a 75/25 fitting/calibration split inside

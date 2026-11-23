@@ -27,4 +27,5 @@ __all__ = [
     "bounds",
     "reports",
     "failures",
+    "stability",
 ]

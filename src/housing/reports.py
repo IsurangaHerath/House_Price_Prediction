@@ -16,6 +16,7 @@ AVAILABLE_REPORTS = (
     "spatial_validation.md",
     "error_map.md",
     "explainability.md",
+    "importance_stability.md",
     "uncertainty.md",
     "conformal.md",
     "error_analysis.md",

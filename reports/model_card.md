@@ -144,6 +144,7 @@ Full reports: [`baseline_results.md`](./baseline_results.md),
 [`spatial_validation.md`](./spatial_validation.md),
 [`error_map.md`](./error_map.md),
 [`explainability.md`](./explainability.md),
+[`importance_stability.md`](./importance_stability.md),
 [`uncertainty.md`](./uncertainty.md),
 [`conformal.md`](./conformal.md),
 [`error_analysis.md`](./error_analysis.md),
@@ -167,7 +168,9 @@ Permutation importance on the holdout set:
 
 Income and location dominate. Partial dependence shows predicted value rising
 with median income and falling from the coast toward inland areas. These are
-associations, not causal effects.
+associations, not causal effects. The ranking is identical across five
+independent split seeds, with all pairwise rank correlations at 1.0; see
+[`importance_stability.md`](./importance_stability.md).
 
 ## Limitations and ethical considerations
 
