@@ -71,3 +71,7 @@ single house.
   might be.
 - **One global setting.** The same 10th to 90th percentile is used for every
   row. A per-row calibration check would be a larger follow-up.
+
+A conformal alternative is evaluated in
+[`conformal.md`](./conformal.md). It meets 80% average coverage but covers less
+than half of capped rows, so the tree range stays in the dashboard.

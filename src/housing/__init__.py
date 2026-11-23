@@ -20,4 +20,5 @@ __all__ = [
     "spatial",
     "explain",
     "uncertainty",
+    "conformal",
 ]

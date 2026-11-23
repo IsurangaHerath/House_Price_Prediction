@@ -26,18 +26,19 @@ applications.
 | Spatial validation | Complete, tested |
 | Model explainability | Complete, tested |
 | Prediction uncertainty | Complete, tested |
+| Conformal calibration | Complete, tested |
 | Model card | Complete |
 | Streamlit dashboard | Complete |
 | Saved model artifact | Complete, tested |
 | Continuous integration | Configured |
 
 The training, tuning, robustness, spatial-validation, explainability,
-uncertainty, and analysis workflows are reproducible with
+uncertainty, calibration, and analysis workflows are reproducible with
 `python -m src.housing.train`, `python -m src.housing.tuning`,
 `python -m src.housing.robustness`, `python -m src.housing.spatial`,
-`python -m src.housing.explain`, `python -m src.housing.uncertainty`, and
-`python -m src.housing.analyze`. The dashboard runs with
-`streamlit run app.py`. Measured results are stored in the
+`python -m src.housing.explain`, `python -m src.housing.uncertainty`,
+`python -m src.housing.conformal`, and `python -m src.housing.analyze`. The
+dashboard runs with `streamlit run app.py`. Measured results are stored in the
 [`reports/`](./reports) folder, and intended use and ethical limits are
 documented in the [`model card`](./reports/model_card.md).
 
@@ -61,6 +62,7 @@ house-price-prediction-ml/
 │   ├── spatial_validation.md  # scores on held-out regions
 │   ├── explainability.md      # importance and partial dependence
 │   ├── uncertainty.md         # forest range and coverage
+│   ├── conformal.md           # calibrated range comparison
 │   ├── model_card.md          # intended use, metrics, and limits
 │   └── feature_importance.csv # permutation importance values
 ├── notebooks/
@@ -82,7 +84,8 @@ house-price-prediction-ml/
 │       ├── robustness.py      # holdout score across split seeds
 │       ├── spatial.py         # scores on held-out geographic regions
 │       ├── explain.py         # permutation importance and dependence
-│       └── uncertainty.py     # prediction range from the forest's trees
+│       ├── uncertainty.py     # prediction range from the forest's trees
+│       └── conformal.py       # calibrated range comparison
 └── tests/
     ├── test_data.py
     ├── test_features.py
@@ -96,7 +99,8 @@ house-price-prediction-ml/
     ├── test_robustness.py
     ├── test_spatial.py
     ├── test_explain.py
-    └── test_uncertainty.py
+    ├── test_uncertainty.py
+    └── test_conformal.py
 ```
 
 ## Dataset
@@ -219,6 +223,15 @@ Run the uncertainty check:
 
 This uses the forest's 100 trees to build a 10th to 90th percentile range and
 reports how often the holdout truth falls inside it.
+
+Run the conformal calibration check:
+
+```powershell
+.venv\Scripts\python.exe -m src.housing.conformal
+```
+
+This holds out part of the training data to calibrate an 80% interval, then
+compares it with the tree range on the same model.
 
 Run the residual analysis:
 
@@ -343,6 +356,19 @@ conservative. The range describes how much the trees disagree; it is not a
 guarantee and does not include market or sampling uncertainty. Details are in
 [`reports/uncertainty.md`](./reports/uncertainty.md).
 
+`python -m src.housing.conformal` checks whether a formally calibrated interval
+would be better. On the same fitted model:
+
+| Method | Coverage | Mean width | Cap coverage |
+|---|---:|---:|---:|
+| Conformal 80% | 80.2% | 1.024 | 47.3% |
+| Tree 10th–90th | 85.1% | 1.182 | 81.0% |
+
+Conformal hits its average target and is narrower, but it covers less than half
+of the capped rows because their truth sits at `$500,000` while predictions
+regress toward the mean. The tree range adapts at the cap, so the dashboard
+keeps it. Details are in [`reports/conformal.md`](./reports/conformal.md).
+
 ## Model card
 
 [`reports/model_card.md`](./reports/model_card.md) records the model's intended
@@ -389,7 +415,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 41 tests currently pass locally, and the same suite runs on every push and
+All 45 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -422,6 +448,8 @@ The badge at the top of this README shows the latest result.
   set.
 - Uncertainty: the 10th to 90th percentile of the forest's tree predictions,
   checked against holdout coverage.
+- Calibration: split conformal with a 75/25 fitting/calibration split inside
+  the training data.
 - Metrics: MAE, RMSE, and R² in target units, plus MAE/RMSE in dollars.
 - Residuals: mean/median error, underprediction rate, and cap-vs-uncapped MAE.
 - Dashboard: reuses the training workflow, caches results, and fits the
@@ -447,7 +475,8 @@ The badge at the top of this README shows the latest result.
    (`python -m src.housing.robustness`).
 5. **Ranges are not guarantees.** The dashboard's likely range is the spread of
    the forest's trees, not a calibrated confidence interval. It covers 85% of
-   holdout rows, but coverage on a new region is unmeasured.
+   holdout rows, but coverage on a new region is unmeasured. A global conformal
+   interval meets 80% average coverage yet covers only 47% of capped rows.
 
 ## License
 

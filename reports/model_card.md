@@ -100,10 +100,17 @@ width is **0.988** (`$98,770`). At the `$500,000` cap, coverage is **83.7%**.
 The range reflects disagreement between trees, not market or sampling
 uncertainty.
 
+A split conformal 80% interval was also checked. It reaches **80.2%** coverage
+with a narrower mean width of **1.024**, but it covers only **47.3%** of capped
+rows because predictions regress toward the mean while the truth stays at
+`5.0`. The dashboard keeps the tree range for that reason.
+
 Full reports: [`baseline_results.md`](./baseline_results.md),
 [`tuning_results.md`](./tuning_results.md),
-[`spatial_validation.md`](./spatial_validation.md), and
-[`explainability.md`](./explainability.md).
+[`spatial_validation.md`](./spatial_validation.md),
+[`explainability.md`](./explainability.md),
+[`uncertainty.md`](./uncertainty.md), and
+[`conformal.md`](./conformal.md).
 
 ## Explainability
 
@@ -149,6 +156,7 @@ associations, not causal effects.
 .venv\Scripts\python.exe -m src.housing.spatial
 .venv\Scripts\python.exe -m src.housing.explain
 .venv\Scripts\python.exe -m src.housing.uncertainty
+.venv\Scripts\python.exe -m src.housing.conformal
 .venv\Scripts\python.exe -m src.housing.analyze
 .venv\Scripts\python.exe -m src.housing.finalize
 ```

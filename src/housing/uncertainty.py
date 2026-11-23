@@ -8,7 +8,7 @@ from .models import build_models
 from .train import split_train_test
 
 
-def _as_frame(features):
+def as_frame(features):
     """Accept a dict or a DataFrame and return a DataFrame."""
     if isinstance(features, dict):
         features = pd.DataFrame([features])
@@ -35,7 +35,7 @@ def _transform_features(model, features):
 
 def prediction_interval(model, features, lower=0.10, upper=0.90):
     """Return the forest's lower and upper prediction quantiles."""
-    features = _as_frame(features)
+    features = as_frame(features)
 
     regressor = getattr(model, "named_steps", {}).get("regressor", model)
     trees = getattr(regressor, "estimators_", None)
