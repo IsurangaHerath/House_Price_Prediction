@@ -170,7 +170,8 @@ Income and location dominate. Partial dependence shows predicted value rising
 with median income and falling from the coast toward inland areas. These are
 associations, not causal effects. The ranking is identical across five
 independent split seeds, with all pairwise rank correlations at 1.0; see
-[`importance_stability.md`](./importance_stability.md).
+[`importance_stability.md`](./importance_stability.md). The dashboard also shows
+a local what-if curve for median income, holding the other inputs fixed.
 
 ## Limitations and ethical considerations
 

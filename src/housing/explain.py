@@ -78,6 +78,22 @@ def partial_dependence_curve(
     return pd.DataFrame({feature: grid, "prediction": predictions})
 
 
+def what_if_curve(model, features, feature, values):
+    """Predict while changing one feature and holding the others fixed."""
+    if feature not in features:
+        raise ValueError(f"Unknown feature: {feature}")
+
+    frame = pd.DataFrame([features] * len(values))
+    frame[feature] = list(values)
+
+    return pd.DataFrame(
+        {
+            feature: list(values),
+            "prediction": model.predict(frame),
+        }
+    )
+
+
 def save_importance_plot(table, output_dir=FIGURE_DIR):
     """Save a horizontal bar chart of permutation importance."""
     output_dir = Path(output_dir)

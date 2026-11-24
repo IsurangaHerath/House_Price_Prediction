@@ -88,6 +88,14 @@ Predicted value falls from the coast toward the inland east:
 
 Again, this is a geographic association, not a causal relationship.
 
+## Local what-if view
+
+The dashboard's Predict tab can vary median income from the 1st to the 99th
+percentile while holding the other seven inputs fixed. This is the same idea as
+the partial dependence curve above, but conditioned on one entered block rather
+than averaged over hundreds of holdout rows. The curve uses the selected model
+and is generated on the fly.
+
 ## Plots
 
 The script writes:

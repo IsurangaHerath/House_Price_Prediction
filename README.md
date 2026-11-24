@@ -39,6 +39,7 @@ applications.
 | Geographic error map | Complete, tested |
 | Prediction error context | Complete, tested |
 | Importance stability | Complete, tested |
+| Local what-if view | Complete, tested |
 | Continuous integration | Configured |
 
 The training, tuning, robustness, spatial-validation, explainability,
@@ -101,7 +102,7 @@ house-price-prediction-ml/
 │       ├── tuning.py          # random forest hyperparameter search
 │       ├── robustness.py      # holdout score across split seeds
 │       ├── spatial.py         # scores on held-out geographic regions
-│       ├── explain.py         # permutation importance and dependence
+│       ├── explain.py         # importance, dependence, what-if curves
 │       ├── stability.py       # importance across split seeds
 │       ├── uncertainty.py     # prediction range from the forest's trees
 │       ├── conformal.py       # calibrated range comparison
@@ -322,8 +323,9 @@ The dashboard has four tabs:
 
 - **Predict** — enter block-group features and get an estimated median house
   value in dollars, a likely range from the forest's trees, and the typical
-  holdout error for that income band. Inputs outside the 1st–99th percentile
-  training range trigger a warning.
+  holdout error for that income band, and an expandable what-if chart showing
+  how the estimate changes with median income. Inputs outside the 1st–99th
+  percentile training range trigger a warning.
 - **Model comparison** — cross-validation and holdout scores for all four
   models.
 - **Data overview** — dataset summary and the target distribution.
@@ -602,7 +604,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 72 tests currently pass locally, and the same suite runs on every push and
+All 74 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration

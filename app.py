@@ -12,6 +12,7 @@ from src.housing.data import (
     load_dataset,
     validate_frame,
 )
+from src.housing.explain import what_if_curve
 from src.housing.finalize import MODEL_PATH, load_model
 from src.housing.models import build_models
 from src.housing.predict import (
@@ -188,6 +189,15 @@ def render_predict_tab(df, results):
             f"Income band **{band}**: typical holdout error "
             f"**{format_usd(typical_mae * TARGET_UNIT_USD)}**."
         )
+
+    with st.expander("What if median income changed?"):
+        income_bounds = get_bounds().loc["MedInc"]
+        values = np.linspace(
+            income_bounds["low"], income_bounds["high"], 20
+        )
+        curve = what_if_curve(model, features, "MedInc", values)
+        st.line_chart(curve.set_index("MedInc") * TARGET_UNIT_USD)
+        st.caption("Every other input stays at the values entered above.")
 
     flagged = outside_mask(features, get_bounds()).iloc[0]
     unusual = list(flagged.index[flagged])
