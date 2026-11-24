@@ -98,7 +98,9 @@ The 10th to 90th percentile of the forest's 100 tree predictions covers
 **85.2%** of holdout rows. Mean width is **1.161** (`$116,120`) and median
 width is **0.988** (`$98,770`). At the `$500,000` cap, coverage is **83.7%**.
 The range reflects disagreement between trees, not market or sampling
-uncertainty.
+uncertainty. Coverage stays within **82%–87%** across income, house-age,
+occupancy, and latitude bands; see
+[`uncertainty_segments.md`](./uncertainty_segments.md).
 
 A split conformal 80% interval was also checked. It reaches **80.2%** coverage
 with a narrower mean width of **1.024**, but it covers only **47.3%** of capped
@@ -146,6 +148,7 @@ Full reports: [`baseline_results.md`](./baseline_results.md),
 [`explainability.md`](./explainability.md),
 [`importance_stability.md`](./importance_stability.md),
 [`uncertainty.md`](./uncertainty.md),
+[`uncertainty_segments.md`](./uncertainty_segments.md),
 [`conformal.md`](./conformal.md),
 [`error_analysis.md`](./error_analysis.md),
 [`learning_curve.md`](./learning_curve.md), and

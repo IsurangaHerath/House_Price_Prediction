@@ -40,6 +40,7 @@ applications.
 | Prediction error context | Complete, tested |
 | Importance stability | Complete, tested |
 | Local what-if view | Complete, tested |
+| Uncertainty by subgroup | Complete, tested |
 | Continuous integration | Configured |
 
 The training, tuning, robustness, spatial-validation, explainability,
@@ -76,6 +77,8 @@ house-price-prediction-ml/
 │   ├── importance_stability.md # importance across five split seeds
 │   ├── importance_stability.csv # raw per-seed importance table
 │   ├── uncertainty.md         # forest range and coverage
+│   ├── uncertainty_segments.md # coverage and width by feature band
+│   ├── uncertainty_segments.csv # raw band-by-band coverage table
 │   ├── conformal.md           # calibrated range comparison
 │   ├── error_analysis.md      # errors by income, age, occupancy, latitude
 │   ├── segment_errors.csv     # saved band-by-band holdout errors
@@ -263,8 +266,9 @@ Run the uncertainty check:
 .venv\Scripts\python.exe -m src.housing.uncertainty
 ```
 
-This uses the forest's 100 trees to build a 10th to 90th percentile range and
-reports how often the holdout truth falls inside it.
+This uses the forest's 100 trees to build a 10th to 90th percentile range,
+reports how often the holdout truth falls inside it, and breaks coverage and
+width down by feature band.
 
 Run the conformal calibration check:
 
@@ -467,6 +471,11 @@ conservative. The range describes how much the trees disagree; it is not a
 guarantee and does not include market or sampling uncertainty. Details are in
 [`reports/uncertainty.md`](./reports/uncertainty.md).
 
+Coverage stays between **82%** and **87%** across all four subgroup definitions.
+Intervals widen with income (0.875 to 1.467) and are widest for low-occupancy
+blocks (2.013), which also have the highest error. See
+[`reports/uncertainty_segments.md`](./reports/uncertainty_segments.md).
+
 `python -m src.housing.conformal` checks whether a formally calibrated interval
 would be better. On the same fitted model:
 
@@ -604,7 +613,7 @@ are in [`reports/baseline_results.md`](./reports/baseline_results.md).
 .venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-All 74 tests currently pass locally, and the same suite runs on every push and
+All 75 tests currently pass locally, and the same suite runs on every push and
 pull request through GitHub Actions.
 
 ## Continuous integration
@@ -636,7 +645,7 @@ The badge at the top of this README shows the latest result.
 - Explainability: permutation importance and partial dependence on the holdout
   set; importance ranking is rechecked on five split seeds.
 - Uncertainty: the 10th to 90th percentile of the forest's tree predictions,
-  checked against holdout coverage.
+  checked against holdout coverage overall and by feature band.
 - Calibration: split conformal with a 75/25 fitting/calibration split inside
   the training data.
 - Subgroup errors: fixed income, house-age, occupancy, and latitude bands on

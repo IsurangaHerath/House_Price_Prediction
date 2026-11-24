@@ -18,6 +18,7 @@ AVAILABLE_REPORTS = (
     "explainability.md",
     "importance_stability.md",
     "uncertainty.md",
+    "uncertainty_segments.md",
     "conformal.md",
     "error_analysis.md",
     "learning_curve.md",

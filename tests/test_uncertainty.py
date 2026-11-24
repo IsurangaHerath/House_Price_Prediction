@@ -1,6 +1,7 @@
 """Tests for the forest-based prediction range."""
 
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.ensemble import RandomForestRegressor
 
@@ -46,3 +47,20 @@ def test_interval_coverage():
 
     # The second value is outside its interval.
     assert hu.interval_coverage(y_true, low, high) == pytest.approx(0.75)
+
+
+def test_coverage_by_segment():
+    y_true = np.array([1.0, 2.0, 3.0, 4.0])
+    intervals = pd.DataFrame(
+        {
+            "low": [0.5, 2.5, 2.5, 3.5],
+            "high": [1.5, 3.5, 3.5, 4.5],
+        }
+    )
+    groups = pd.Series(["a", "a", "b", "b"])
+
+    table = hu.coverage_by_segment(y_true, intervals, groups)
+
+    assert list(table["segment"]) == ["a", "b"]
+    assert table["coverage"].tolist() == pytest.approx([0.5, 1.0])
+    assert table["mean_width"].tolist() == pytest.approx([1.0, 1.0])
